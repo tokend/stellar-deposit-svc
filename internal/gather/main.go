@@ -2,13 +2,15 @@ package payment
 
 import (
 	"context"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/getters"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/submit"
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/running"
 	"gitlab.com/tokend/go/xdrbuild"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/config"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/payment"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/submitter"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/watchlist"
+	"github.com/tokend/stellar-deposit-svc/internal/config"
+	"github.com/tokend/stellar-deposit-svc/internal/payment"
+	"github.com/tokend/stellar-deposit-svc/internal/submitter"
+	"github.com/tokend/stellar-deposit-svc/internal/watchlist"
 	"sync"
 	"time"
 )
@@ -33,7 +35,7 @@ func NewService(opts Opts) *Service {
 	wg := &sync.WaitGroup{}
 	assetWatcher := watchlist.NewService(watchlist.Opts{
 		AssetOwner: opts.Config.WatchlistConfig().AssetOwner.Address(),
-		Streamer:   opts.Config.Horizon(),
+		Streamer:   getters.AssetGetter{opts.Config.Horizon()},
 		Log:        opts.Log,
 		Timeout:    opts.Config.WatchlistConfig().Delay,
 		Wg:         wg,
@@ -81,10 +83,10 @@ func (s *Service) spawn(ctx context.Context, details watchlist.Details) {
 	depositer := submitter.NewService(submitter.Opts{
 		AssetDetails: details,
 		Log:          s.log,
-		Streamer:     s.config.Horizon(),
+		Streamer:     &getters.TransactionGetter{s.config.Horizon()},
 		Builder:      s.builder,
 		AssetIssuer:  s.config.DepositConfig().AssetIssuer,
-		TxSubmitter:  s.config.Horizon(),
+		TxSubmitter:  submit.New(s.config.Horizon().Client),
 		Ch:           payments,
 		WG:           s.wg,
 	})

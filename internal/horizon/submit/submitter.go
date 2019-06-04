@@ -1,4 +1,4 @@
-package horizon
+package submit
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/google/jsonapi"
 	regources "gitlab.com/tokend/regources/generated"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
 	"net/http"
 
 	"gitlab.com/distributed_lab/logan/v3/errors"
@@ -24,7 +25,21 @@ type Error interface {
 	Path() string
 }
 
-func (c *Client) Submit(ctx context.Context, envelope string) (*regources.TransactionResponse, error) {
+type Interface interface {
+	Submit(ctx context.Context, envelope string)
+}
+
+type submitter struct {
+	*client.Client
+}
+
+func New(cl *client.Client) *submitter {
+	return &submitter{
+		Client: cl,
+	}
+}
+
+func (s *submitter) Submit(ctx context.Context, envelope string) (*regources.TransactionResponse, error) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(&regources.SubmitTransactionBody{
 		Tx: envelope,
@@ -32,13 +47,7 @@ func (c *Client) Submit(ctx context.Context, envelope string) (*regources.Transa
 	if err != nil {
 		panic(errors.Wrap(err, "failed to marshal request"))
 	}
-	req, err := c.NewRequest("POST", "/v3/transactions", nil, &buf)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare request")
-	}
-
-
-	response, err := c.performRequest(req)
+	response, err := s.Post("/v3/transactions", &buf)
 	if err == nil {
 		var success regources.TransactionResponse
 		if err := json.Unmarshal(response, &success); err != nil {
@@ -62,6 +71,6 @@ func (c *Client) Submit(ctx context.Context, envelope string) (*regources.Transa
 	case http.StatusInternalServerError: // internal error
 		return nil, ErrSubmitInternal
 	default:
-		panic("unexpected submission result")
+		return nil, ErrSubmitUnexpectedStatusCode
 	}
 }

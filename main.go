@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gitlab.com/tokend/stellar-deposit-svc/internal/cli"
+	"github.com/tokend/stellar-deposit-svc/internal/cli"
 	"os"
 )
 

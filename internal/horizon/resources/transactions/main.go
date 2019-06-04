@@ -2,7 +2,7 @@ package transactions
 
 import (
 	"fmt"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/horizon/pages"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/pages"
 )
 
 const (

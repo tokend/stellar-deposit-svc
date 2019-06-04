@@ -1,4 +1,4 @@
-package horizon
+package query
 
 import (
 	"fmt"
@@ -6,13 +6,7 @@ import (
 	"reflect"
 )
 
-const (
-	filter  = "filter"
-	include = "include"
-	page    = "page"
-)
-
-type QueryParams interface{}
+type Params interface{}
 
 func handleFilters(values *url.Values, t reflect.Type, v reflect.Value) {
 	for i := 0; i < t.NumField(); i++ {
@@ -48,7 +42,7 @@ func handleIncludes(values *url.Values, t reflect.Type, v reflect.Value) {
 	}
 }
 
-func prepareQuery(qp QueryParams) (url.Values, error) {
+func Prepare(qp Params) (url.Values, error) {
 	result := url.Values{}
 	if qp == nil {
 		return result, nil

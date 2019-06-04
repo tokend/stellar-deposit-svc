@@ -1,8 +1,7 @@
-package horizon
+package client
 
 import (
-	"bytes"
-	"encoding/json"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	depkeypair "gitlab.com/tokend/go/keypair"
@@ -10,15 +9,53 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 )
 
-func (c *Client) NewRequest(method string, endpoint string, qp QueryParams, body io.Reader) (*http.Request, error) {
-	query, err := prepareQuery(qp)
+func (c *Client) Get(endpoint string) ([]byte, error) {
+	u, err := c.URL(endpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve url")
+	}
+	r, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare request")
+	}
+
+	return c.performRequest(r)
+}
+
+func (c *Client) Put(endpoint string, body io.Reader) ([]byte, error) {
+	u, err := c.URL(endpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve url")
+	}
+	r, err := http.NewRequest("PUT", u, body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare request")
+	}
+
+	return c.performRequest(r)
+}
+
+func (c *Client) Post(endpoint string, body io.Reader) ([]byte, error) {
+	u, err := c.URL(endpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve url")
+	}
+	r, err := http.NewRequest("POST", u, body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare request")
+	}
+
+	return c.performRequest(r)
+}
+
+func (c *Client) newRequest(method string, endpoint string, qp query.Params, body io.Reader) (*http.Request, error) {
+	q, err := query.Prepare(qp)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare query params")
 	}
-	u, err := c.resolveURL(endpoint)
+	u, err := c.URL(endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to resolve url")
 	}
@@ -26,29 +63,10 @@ func (c *Client) NewRequest(method string, endpoint string, qp QueryParams, body
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare request")
 	}
-	r.URL.RawQuery = query.Encode()
+	r.URL.RawQuery = q.Encode()
 
 	return r, nil
 }
-
-func (c *Client) urlFromLink(link string) (string, error) {
-	u, err := url.Parse(link)
-	if err != nil {
-		return "", errors.New("failed to parse link")
-	}
-
-	return c.base.ResolveReference(u).String(), nil
-}
-
-func (c *Client) resolveURL(endpoint string) (string, error) {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse endpoint into URL")
-	}
-
-	return c.base.ResolveReference(u).String(), nil
-}
-
 func (c *Client) do(r *http.Request) (int, []byte, error) {
 
 	// ensure content-type just in case
@@ -97,15 +115,4 @@ func handleResponse(resp []byte, code int) ([]byte, error) {
 
 func isStatusCodeSuccessful(code int) bool {
 	return code >= 200 && code < 300
-}
-
-func decodeResponse(bb []byte, v interface{}) error {
-	response := bytes.NewReader(bb)
-	decoder := json.NewDecoder(response)
-
-	err := decoder.Decode(v)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse response")
-	}
-	return nil
 }

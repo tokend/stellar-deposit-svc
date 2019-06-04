@@ -11,8 +11,8 @@ import (
 	"gitlab.com/tokend/go/xdrbuild"
 	"gitlab.com/tokend/keypair"
 	regources "gitlab.com/tokend/regources/generated"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/payment"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/watchlist"
+	"github.com/tokend/stellar-deposit-svc/internal/payment"
+	"github.com/tokend/stellar-deposit-svc/internal/watchlist"
 	"sync"
 	"time"
 )
@@ -101,7 +101,7 @@ func (s *Service) Run(ctx context.Context) {
 }
 
 func (s *Service) processPayment(ctx context.Context, payment payment.Details) error {
-	address := s.addressProvider.ExternalAccountAt(ctx, payment.LedgerCloseTime, s.externalSystem, payment.TxMemo)
+	address := s.addressProvider.ExternalAccountAt(ctx, payment.LedgerCloseTime, s.asset.ExternalSystemType, payment.TxMemo)
 	if address == nil {
 		//todo
 		return nil

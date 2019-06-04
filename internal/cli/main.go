@@ -6,7 +6,7 @@ import (
 	"gitlab.com/distributed_lab/kit/kv"
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/config"
+	"github.com/tokend/stellar-deposit-svc/internal/config"
 )
 
 func Run(args []string) bool {

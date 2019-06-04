@@ -1,9 +1,8 @@
-package horizon
+package query
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/horizon/assets"
 	"net/url"
 	"reflect"
 	"testing"
@@ -12,11 +11,11 @@ import (
 var (
 	ownerAddress = "GBA4EX43M25UPV4WIE6RRMQOFTWXZZRIPFAI5VPY6Z2ZVVXVWZ6NEOOB"
 	policies = uint32(42)
-	params = assets.Params{
-		Includes: assets.Includes{
+	params = AssetParams{
+		Includes: AssetIncludes{
 			Owner: true,
 		},
-		Filters: assets.Filters{
+		Filters: AssetFilters{
 			Owner: &ownerAddress,
 			Policy: &policies,
 		},
@@ -29,7 +28,7 @@ var (
 func BenchmarkPrepare(b *testing.B) {
 	val := url.Values{}
 	for n := 0; n < b.N; n++ {
-		val, _  = prepareQuery(params)
+		val, _  = Prepare(params)
 	}
 	values = val
 }
@@ -37,7 +36,7 @@ func BenchmarkPrepare(b *testing.B) {
 
 func TestPrepareQuery(t *testing.T) {
 	t.Run("all params preset", func(t *testing.T) {
-		vals, err := prepareQuery(params)
+		vals, err := Prepare(params)
 		ty := reflect.TypeOf(params)
 		fmt.Println(ty)
 		fmt.Println(ty.NumField())

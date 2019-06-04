@@ -4,20 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	. "github.com/go-ozzo/ozzo-validation"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/getters"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/distributed_lab/running"
 	"gitlab.com/tokend/regources/generated"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/horizon"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/horizon/assets"
 	"sync"
 	"time"
 )
-
-type assetStreamer interface {
-	Assets(params horizon.QueryParams) (*regources.AssetListResponse, error)
-	NextPage(links *regources.Links, v interface{}) error
-}
 
 type StellarDetails struct {
 	StellarSupported   bool   `json:"stellar_supported"`
@@ -41,7 +36,7 @@ type Details struct {
 }
 
 type Service struct {
-	streamer assetStreamer
+	streamer getters.AssetGetter
 	log      *logan.Entry
 	owner    string
 	timeout  time.Duration
@@ -50,7 +45,7 @@ type Service struct {
 }
 
 type Opts struct {
-	Streamer   assetStreamer
+	Streamer   getters.AssetGetter
 	Log        *logan.Entry
 	AssetOwner string
 	Timeout    time.Duration
@@ -88,13 +83,13 @@ func (s *Service) Run(ctx context.Context) {
 }
 
 func (s *Service) getWatchList() ([]Details, error) {
-	params := assets.Params{
-		Filters: assets.Filters{
+	params := query.AssetParams{
+		Filters: query.AssetFilters{
 			Owner: &s.owner,
 		},
 	}
 
-	assetsResponse, err := s.streamer.Assets(params)
+	assetsResponse, err := s.streamer.AssetList(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get asset list for owner", logan.F{
 			"owner_address": s.owner,
@@ -107,8 +102,8 @@ func (s *Service) getWatchList() ([]Details, error) {
 	}
 
 	links := assetsResponse.Links
-	for horizon.HasMorePages(links) {
-		err = s.streamer.NextPage(links, assetsResponse)
+	for links.Next != "" {
+		assetsResponse, err = s.streamer.Next(links)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get next page of assetsResponse", logan.F{
 				"links": links,

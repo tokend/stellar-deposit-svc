@@ -8,7 +8,7 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/distributed_lab/running"
-	"gitlab.com/tokend/stellar-deposit-svc/internal/watchlist"
+	"github.com/tokend/stellar-deposit-svc/internal/watchlist"
 	"sync"
 	"time"
 )

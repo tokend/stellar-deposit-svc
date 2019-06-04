@@ -10,6 +10,14 @@
   version = "2018.01.18"
 
 [[projects]]
+  digest = "1:f438d91be142877c3ad83157992c91de787ddfbddcc2a7da1ef6ef61606cadc4"
+  name = "github.com/cheekybits/genny"
+  packages = ["generic"]
+  pruneopts = "UT"
+  revision = "d2cf3cdd35ce0d789056c4bc02a4d6349c947caf"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -421,13 +429,13 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/cheekybits/genny/generic",
     "github.com/go-ozzo/ozzo-validation",
     "github.com/google/jsonapi",
     "github.com/stellar/go/clients/horizonclient",
-    "github.com/stellar/go/keypair",
     "github.com/stellar/go/protocols/horizon",
     "github.com/stellar/go/protocols/horizon/operations",
-    "github.com/stellar/go/support/log",
+    "github.com/stretchr/testify/assert",
     "github.com/urfave/cli",
     "gitlab.com/distributed_lab/figure",
     "gitlab.com/distributed_lab/kit/comfig",
