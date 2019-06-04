@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"github.com/urfave/cli"
 	"gitlab.com/distributed_lab/kit/kv"
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"github.com/tokend/stellar-deposit-svc/internal/config"
+	"github.com/tokend/stellar-deposit-svc/internal/gather"
 )
 
 func Run(args []string) bool {
@@ -40,8 +42,14 @@ func Run(args []string) bool {
 				{
 					Name: "deposit",
 					Before: initialize,
-					Action: func(_ *cli.Context) {
+					Action: func(_ *cli.Context) error {
+						service := gather.NewService(gather.Opts{
+							Log: log,
+							Config: cfg,
+						})
 
+						service.Run(context.Background())
+						return errors.New("service died")
 					},
 				},
 			},
