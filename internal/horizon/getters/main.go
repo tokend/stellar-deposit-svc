@@ -14,8 +14,7 @@ import (
 //go:generate genny -in=getter.tmpl -out=transaction_getter.go gen "Template=Transaction"
 
 type Getter interface {
-	GetList(endpoint string, params query.Params, result interface{}) error
-	GetSingle(endpoint string, params query.Params, result interface{}) error
+	GetPage(endpoint string, params query.Params, result interface{}) error
 	PageFromLink(link string, v interface{}) error
 }
 
@@ -44,40 +43,12 @@ func (g *getter) PageFromLink(link string, v interface{}) error {
 	return nil
 }
 
-func (g *getter) GetList(endpoint string, params query.Params, result interface{}) error {
+func (g *getter) GetPage(endpoint string, params query.Params, result interface{}) error {
 	q, err := query.Prepare(params)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare query")
 	}
-	uri, err := g.Resolve().WithQuery(endpoint, q)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve request URI", logan.F{
-			"endpoint": endpoint,
-			"query":    params,
-		})
-	}
-
-	resp, err := g.Get(uri)
-	if err != nil {
-		return errors.Wrap(err, "failed to perform get")
-	}
-
-	response := bytes.NewReader(resp)
-	decoder := json.NewDecoder(response)
-	err = decoder.Decode(result)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse response")
-	}
-
-	return nil
-}
-
-func (g *getter) GetSingle(endpoint string, params query.Params, result interface{}) error {
-	q, err := query.Prepare(params)
-	if err != nil {
-		return errors.Wrap(err, "failed to prepare query")
-	}
-	uri, err := g.Resolve().WithQuery(endpoint, q)
+	uri, err := g.Resolve().URI(endpoint, q)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve request URI", logan.F{
 			"endpoint": endpoint,

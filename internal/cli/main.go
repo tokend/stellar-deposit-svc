@@ -2,63 +2,42 @@ package cli
 
 import (
 	"context"
-	"fmt"
-	"github.com/urfave/cli"
 	"gitlab.com/distributed_lab/kit/kv"
 	"gitlab.com/distributed_lab/logan/v3"
-	"gitlab.com/distributed_lab/logan/v3/errors"
 	"github.com/tokend/stellar-deposit-svc/internal/config"
-	"github.com/tokend/stellar-deposit-svc/internal/gather"
+	"github.com/tokend/stellar-deposit-svc/internal/services/depositer"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 func Run(args []string) bool {
 	log := logan.New()
-	var cfg config.Config
+
 	defer func() {
 		if rvr := recover(); rvr != nil {
-			log.WithRecover("app panicked")
+			log.WithRecover(rvr).Error("app panicked")
 		}
 	}()
 
-	app := cli.NewApp()
+	app := kingpin.New("stellar-deposit-svc", "")
+	runCmd := app.Command("run", "run command")
+	deposit := runCmd.Command("deposit", "run deposit service")
 
-	initialize := func (_ *cli.Context) error {
-		getter, err := kv.FromEnv()
-		if err != nil {
-			if err == kv.ErrNoBackends {
-				fmt.Println("Could not get config - is KV_VIPER_FILE env var set?")
-			}
-			return errors.Wrap(err, "failed to get config")
-		}
-		cfg = config.NewConfig(getter)
+	cfg := config.NewConfig(kv.MustFromEnv())
+	log = cfg.Log()
 
-		return nil
+	cmd, err := app.Parse(args[1:])
+	if err != nil {
+		log.WithError(err).Error("failed to parse arguments")
 	}
 
-	app.Commands = cli.Commands{
-		{
-			Name: "run",
-			Subcommands: cli.Commands{
-				{
-					Name: "deposit",
-					Before: initialize,
-					Action: func(_ *cli.Context) error {
-						service := gather.NewService(gather.Opts{
-							Log: log,
-							Config: cfg,
-						})
-
-						service.Run(context.Background())
-						return errors.New("service died")
-					},
-				},
-			},
-
-		},
-	}
-	if err := app.Run(args); err != nil {
-		log.WithError(err)
+	switch cmd {
+	case deposit.FullCommand():
+		svc := depositer.New(cfg)
+		svc.Run(context.Background())
+	default:
+		log.Errorf("unknown command %s", cmd)
 		return false
 	}
+
 	return true
 }

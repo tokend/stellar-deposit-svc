@@ -16,6 +16,7 @@ import (
 )
 
 type Connector interface {
+	client.Interface
 	State() (*regources.HorizonStateResponse, error)
 	Builder() (*xdrbuild.Builder, error)
 	Submitter() (submit.Interface, error)

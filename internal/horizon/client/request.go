@@ -49,7 +49,7 @@ func (c *Client) Post(endpoint string, body io.Reader) ([]byte, error) {
 
 	return c.performRequest(r)
 }
-func (c *Client) do(r *http.Request) (int, []byte, error) {
+func (c *Client) Do(r *http.Request) (int, []byte, error) {
 	<-c.throttle
 	// ensure content-type just in case
 	r.Header.Set("content-type", "application/json")
@@ -79,7 +79,7 @@ func (c *Client) do(r *http.Request) (int, []byte, error) {
 }
 
 func (c *Client) performRequest(r *http.Request) ([]byte, error) {
-	code, resp, err := c.do(r)
+	code, resp, err := c.Do(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}

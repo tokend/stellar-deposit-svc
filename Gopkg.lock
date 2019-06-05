@@ -2,20 +2,31 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:315c5f2f60c76d89b871c73f9bd5fe689cad96597afd50fb9992228ef80bdd34"
+  name = "github.com/alecthomas/template"
+  packages = [
+    ".",
+    "parse",
+  ]
+  pruneopts = "UT"
+  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c198fdc381e898e8fb62b8eb62758195091c313ad18e52a3067366e1dda2fb3c"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
   digest = "1:fed1f537c2f1269fe475a8556c393fe466641682d73ef8fd0491cd3aa1e47bad"
   name = "github.com/certifi/gocertifi"
   packages = ["."]
   pruneopts = "UT"
   revision = "deb3ae2ef2610fde3330947281941c562861188b"
   version = "2018.01.18"
-
-[[projects]]
-  digest = "1:f438d91be142877c3ad83157992c91de787ddfbddcc2a7da1ef6ef61606cadc4"
-  name = "github.com/cheekybits/genny"
-  packages = ["generic"]
-  pruneopts = "UT"
-  revision = "d2cf3cdd35ce0d789056c4bc02a4d6349c947caf"
-  version = "v1.0.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -50,12 +61,12 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:aacef5f5e45685f2aeda5534d0a750dee6859de7e9088cdd06192787bb01ae6d"
+  branch = "master"
+  digest = "1:d0557c61d3acd22f04f7b6b675b847381034b229b7dce10b1d31bfa0d7f30017"
   name = "github.com/go-errors/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a6af135bd4e28680facf08a3d206b454abc877a4"
-  version = "v1.0.1"
+  revision = "d98b870cc4e05f1545532a80e9909be8216095b6"
 
 [[projects]]
   digest = "1:c116114869f44c711fa5baf9e019fa327101c82ddc4dcc1de84db1f6c43a2d36"
@@ -287,14 +298,6 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
-  name = "github.com/urfave/cli"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
-  version = "v1.20.0"
-
-[[projects]]
   digest = "1:dd08a3819dd8ddd8e6f76b89dc1b9bf26027f918c226eb91b8c0e7ae89d13214"
   name = "gitlab.com/distributed_lab/figure"
   packages = ["."]
@@ -314,9 +317,10 @@
   version = "v0.7.0"
 
 [[projects]]
-  digest = "1:5c74250e2fc48f2fc18808f58640b9b030a76e6eca083486a227441f0803be19"
+  digest = "1:b27e01e69f4ceec735b0130cc2b7d3785768c736c018faae3dbeb49a0cb41f24"
   name = "gitlab.com/distributed_lab/logan"
   packages = [
+    ".",
     "v3",
     "v3/errors",
     "v3/fields",
@@ -418,6 +422,14 @@
   version = "v0.3.2"
 
 [[projects]]
+  digest = "1:c06d9e11d955af78ac3bbb26bd02e01d2f61f689e1a3bce2ef6fb683ef8a7f2d"
+  name = "gopkg.in/alecthomas/kingpin.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
+
+[[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -429,17 +441,16 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/cheekybits/genny/generic",
     "github.com/go-ozzo/ozzo-validation",
     "github.com/google/jsonapi",
     "github.com/stellar/go/clients/horizonclient",
     "github.com/stellar/go/protocols/horizon",
     "github.com/stellar/go/protocols/horizon/operations",
     "github.com/stretchr/testify/assert",
-    "github.com/urfave/cli",
     "gitlab.com/distributed_lab/figure",
     "gitlab.com/distributed_lab/kit/comfig",
     "gitlab.com/distributed_lab/kit/kv",
+    "gitlab.com/distributed_lab/logan",
     "gitlab.com/distributed_lab/logan/v3",
     "gitlab.com/distributed_lab/logan/v3/errors",
     "gitlab.com/distributed_lab/running",
@@ -451,6 +462,7 @@
     "gitlab.com/tokend/keypair",
     "gitlab.com/tokend/keypair/figurekeypair",
     "gitlab.com/tokend/regources/generated",
+    "gopkg.in/alecthomas/kingpin.v2",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

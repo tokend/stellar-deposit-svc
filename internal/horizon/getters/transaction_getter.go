@@ -81,7 +81,7 @@ func (g *defaultTransactionGetter) Page() page.Params {
 
 func (g *defaultTransactionGetter) ByID(ID string) (*regources.TransactionResponse, error) {
 	result := &regources.TransactionResponse{}
-	err := g.base.GetSingle(query.TransactionByID(ID), g.params, result)
+	err := g.base.GetPage(query.TransactionByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -93,7 +93,7 @@ func (g *defaultTransactionGetter) ByID(ID string) (*regources.TransactionRespon
 
 func (g *defaultTransactionGetter) List() (*regources.TransactionListResponse, error) {
 	result := &regources.TransactionListResponse{}
-	err := g.base.GetList(query.TransactionList(), g.params, result)
+	err := g.base.GetPage(query.TransactionList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
 			"query_params": g.params,

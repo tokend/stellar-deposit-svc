@@ -81,7 +81,7 @@ func (g *defaultAssetGetter) Page() page.Params {
 
 func (g *defaultAssetGetter) ByID(ID string) (*regources.AssetResponse, error) {
 	result := &regources.AssetResponse{}
-	err := g.base.GetSingle(query.AssetByID(ID), g.params, result)
+	err := g.base.GetPage(query.AssetByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -93,7 +93,7 @@ func (g *defaultAssetGetter) ByID(ID string) (*regources.AssetResponse, error) {
 
 func (g *defaultAssetGetter) List() (*regources.AssetListResponse, error) {
 	result := &regources.AssetListResponse{}
-	err := g.base.GetList(query.AssetList(), g.params, result)
+	err := g.base.GetPage(query.AssetList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
 			"query_params": g.params,

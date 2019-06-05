@@ -2,12 +2,19 @@ package client
 
 import (
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/path"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"gitlab.com/tokend/keypair"
 )
+
+type Interface interface {
+	Get(endpoint string) ([]byte, error)
+	Put(endpoint string, body io.Reader) ([]byte, error)
+	Post(endpoint string, body io.Reader) ([]byte, error)
+}
 
 type Client struct {
 	throttle <-chan time.Time

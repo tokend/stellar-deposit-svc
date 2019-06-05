@@ -78,7 +78,7 @@ func (g *defaultTemplateGetter) Page() page.Params{
 
 func (g *defaultTemplateGetter) ByID(ID string) (*regources.TemplateResponse, error) {
 	result := &regources.TemplateResponse{}
-	err := g.base.GetSingle(query.TemplateByID(ID), g.params, result)
+	err := g.base.GetPage(query.TemplateByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -90,7 +90,7 @@ func (g *defaultTemplateGetter) ByID(ID string) (*regources.TemplateResponse, er
 
 func (g *defaultTemplateGetter) List() (*regources.TemplateListResponse, error) {
 	result := &regources.TemplateListResponse{}
-	err := g.base.GetList(query.TemplateList(), g.params, result)
+	err := g.base.GetPage(query.TemplateList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
 			"query_params": g.params,
