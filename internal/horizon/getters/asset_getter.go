@@ -5,20 +5,83 @@
 package getters
 
 import (
-	"github.com/tokend/stellar-deposit-svc/internal/horizon"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
-	logan "gitlab.com/distributed_lab/logan/v3"
+	"gitlab.com/distributed_lab/logan"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-type AssetGetter struct {
-	horizon.Interface
+type AssetPager interface {
+	Next() (*regources.AssetListResponse, error)
+	Prev() (*regources.AssetListResponse, error)
+	Self() (*regources.AssetListResponse, error)
 }
 
-func (g *AssetGetter) AssetByID(ID string, params query.AssetParams) (*regources.AssetResponse, error) {
+type AssetGetter interface {
+	AssetPager
+	SetFilters(filters query.AssetFilters)
+	SetIncludes(includes query.AssetIncludes)
+	SetPageParams(pageParams page.Params)
+	SetParams(params query.AssetParams)
+
+	Filter() query.AssetFilters
+	Include() query.AssetIncludes
+	Page() page.Params
+
+	ByID(ID string) (*regources.AssetResponse, error)
+	List() (*regources.AssetListResponse, error)
+}
+
+type defaultAssetGetter struct {
+	base   Getter
+	params query.AssetParams
+
+	currentPageLinks *regources.Links
+}
+
+func NewDefaultAssetGetter(c *client.Client) *defaultAssetGetter {
+	return &defaultAssetGetter{
+		base: New(c),
+	}
+}
+
+func (g *defaultAssetGetter) SetFilters(filters query.AssetFilters) {
+	g.params.Filters = filters
+}
+
+func (g *defaultAssetGetter) SetIncludes(includes query.AssetIncludes) {
+	g.params.Includes = includes
+}
+
+func (g *defaultAssetGetter) SetPageParams(pageParams page.Params) {
+	g.params.PageParams = pageParams
+}
+
+func (g *defaultAssetGetter) SetParams(params query.AssetParams) {
+	g.params = params
+}
+
+func (g *defaultAssetGetter) Params() query.AssetParams {
+	return g.params
+}
+
+func (g *defaultAssetGetter) Filter() query.AssetFilters {
+	return g.params.Filters
+}
+
+func (g *defaultAssetGetter) Include() query.AssetIncludes {
+	return g.params.Includes
+}
+
+func (g *defaultAssetGetter) Page() page.Params {
+	return g.params.PageParams
+}
+
+func (g *defaultAssetGetter) ByID(ID string) (*regources.AssetResponse, error) {
 	result := &regources.AssetResponse{}
-	err := g.GetSingle(query.AssetByID(ID), params, result)
+	err := g.base.GetSingle(query.AssetByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -28,27 +91,57 @@ func (g *AssetGetter) AssetByID(ID string, params query.AssetParams) (*regources
 	return result, nil
 }
 
-func (g *AssetGetter) AssetList(params query.Params) (*regources.AssetListResponse, error) {
+func (g *defaultAssetGetter) List() (*regources.AssetListResponse, error) {
 	result := &regources.AssetListResponse{}
-	err := g.GetList(query.AssetList(), params, result)
+	err := g.base.GetList(query.AssetList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
-			"query_params": params,
+			"query_params": g.params,
 		})
 	}
 
 	return result, nil
 }
 
-func (g *AssetGetter) Next(links *regources.Links) (*regources.AssetListResponse, error) {
-	if links == nil {
+func (g *defaultAssetGetter) Next() (*regources.AssetListResponse, error) {
+	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	result := &regources.AssetListResponse{}
-	err := g.PageFromLink(links.Next, result)
+	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get next page", logan.F{
-			"link": links.Next,
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultAssetGetter) Prev() (*regources.AssetListResponse, error) {
+	if g.currentPageLinks == nil {
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.AssetListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultAssetGetter) Self() (*regources.AssetListResponse, error) {
+	if g.currentPageLinks == nil {
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.AssetListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
 		})
 	}
 

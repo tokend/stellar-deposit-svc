@@ -1,18 +1,18 @@
 package client
 
 import (
-	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
+	"io"
+	"io/ioutil"
+	"net/http"
+
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	depkeypair "gitlab.com/tokend/go/keypair"
 	"gitlab.com/tokend/go/signcontrol"
-	"io"
-	"io/ioutil"
-	"net/http"
 )
 
 func (c *Client) Get(endpoint string) ([]byte, error) {
-	u, err := c.URL(endpoint)
+	u, err := c.resolve.URL(endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to resolve url")
 	}
@@ -25,7 +25,7 @@ func (c *Client) Get(endpoint string) ([]byte, error) {
 }
 
 func (c *Client) Put(endpoint string, body io.Reader) ([]byte, error) {
-	u, err := c.URL(endpoint)
+	u, err := c.resolve.URL(endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to resolve url")
 	}
@@ -38,7 +38,7 @@ func (c *Client) Put(endpoint string, body io.Reader) ([]byte, error) {
 }
 
 func (c *Client) Post(endpoint string, body io.Reader) ([]byte, error) {
-	u, err := c.URL(endpoint)
+	u, err := c.resolve.URL(endpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to resolve url")
 	}
@@ -49,26 +49,8 @@ func (c *Client) Post(endpoint string, body io.Reader) ([]byte, error) {
 
 	return c.performRequest(r)
 }
-
-func (c *Client) newRequest(method string, endpoint string, qp query.Params, body io.Reader) (*http.Request, error) {
-	q, err := query.Prepare(qp)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare query params")
-	}
-	u, err := c.URL(endpoint)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to resolve url")
-	}
-	r, err := http.NewRequest(method, u, body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare request")
-	}
-	r.URL.RawQuery = q.Encode()
-
-	return r, nil
-}
 func (c *Client) do(r *http.Request) (int, []byte, error) {
-
+	<-c.throttle
 	// ensure content-type just in case
 	r.Header.Set("content-type", "application/json")
 

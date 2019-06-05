@@ -1,33 +1,45 @@
-package getters
+package transaction
 
 import (
 	"context"
 	"fmt"
-	"github.com/tokend/stellar-deposit-svc/internal/horizon/pages"
-	"github.com/tokend/stellar-deposit-svc/internal/horizon/resources/transactions"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/getters"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-func (g *TransactionGetter) StreamTransactions(ctx context.Context, changeTypes, entryTypes []int,
+const (
+	streamPageLimit = 100
+)
+
+type Streamer struct {
+	getters.TransactionGetter
+}
+
+func NewStreamer(transactionGetter getters.TransactionGetter) *Streamer {
+	return &Streamer{TransactionGetter: transactionGetter}
+}
+
+func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTypes []int,
 ) (<-chan regources.TransactionResponse, <-chan error) {
 	txChan := make(chan regources.TransactionResponse)
 	errChan := make(chan error)
 	defer close(txChan)
 	defer close(errChan)
 	limit := fmt.Sprintf("%d", streamPageLimit)
-	params := transactions.Params{
-		Includes: transactions.Includes{
-			LedgerEntryChanges: true,
-		},
-		Filters: transactions.Filters{
-			ChangeTypes: changeTypes,
-			EntryTypes:  entryTypes,
-		},
-		PageParams: pages.Params{
-			Limit: &limit,
-		},
-	}
-	txPage, err := g.TransactionList(params)
+	s.SetFilters(query.TransactionFilters{
+		ChangeTypes: changeTypes,
+		EntryTypes:  entryTypes,
+	})
+	s.SetPageParams(page.Params{
+		Limit: &limit,
+	})
+	s.SetIncludes(query.TransactionIncludes{
+		LedgerEntryChanges: true,
+	})
+
+	txPage, err := s.List()
 
 	processedOnPage := make(map[string]bool)
 	go func() {
@@ -54,9 +66,9 @@ func (g *TransactionGetter) StreamTransactions(ctx context.Context, changeTypes,
 			}
 
 			if len(txPage.Data) < streamPageLimit {
-				err = g.PageFromLink(txPage.Links.Self, txPage)
+				txPage, err = s.Self()
 			} else {
-				err = g.PageFromLink(txPage.Links.Next, txPage)
+				txPage, err = s.Next()
 				processedOnPage = make(map[string]bool)
 			}
 		}

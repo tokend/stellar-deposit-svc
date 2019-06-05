@@ -2,21 +2,22 @@ package query
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var (
 	ownerAddress = "GBA4EX43M25UPV4WIE6RRMQOFTWXZZRIPFAI5VPY6Z2ZVVXVWZ6NEOOB"
-	policies = uint32(42)
-	params = AssetParams{
+	policies     = uint32(42)
+	params       = AssetParams{
 		Includes: AssetIncludes{
 			Owner: true,
 		},
 		Filters: AssetFilters{
-			Owner: &ownerAddress,
+			Owner:  &ownerAddress,
 			Policy: &policies,
 		},
 	}
@@ -28,11 +29,10 @@ var (
 func BenchmarkPrepare(b *testing.B) {
 	val := url.Values{}
 	for n := 0; n < b.N; n++ {
-		val, _  = Prepare(params)
+		val, _ = Prepare(params)
 	}
 	values = val
 }
-
 
 func TestPrepareQuery(t *testing.T) {
 	t.Run("all params preset", func(t *testing.T) {

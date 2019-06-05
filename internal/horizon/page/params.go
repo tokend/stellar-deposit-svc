@@ -1,10 +1,11 @@
-package pages
+package page
 
 import (
+	"net/url"
+
 	. "github.com/go-ozzo/ozzo-validation"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/tokend/regources/generated"
-	"net/url"
 )
 
 type Params struct {
@@ -47,7 +48,6 @@ func NextPage(links regources.Links) (Params, error) {
 	return pageParamsFromQuery(nextRaw)
 }
 
-
 func pageParamsFromQuery(raw string) (Params, error) {
 	query, err := url.ParseQuery(raw)
 	if err != nil {
@@ -72,7 +72,7 @@ func NewPageParams(vals url.Values) (Params, error) {
 		params.Limit = &limit
 	}
 
-	if order := vals.Get("order"); order != ""{
+	if order := vals.Get("order"); order != "" {
 		params.Order = &order
 	}
 
@@ -80,7 +80,7 @@ func NewPageParams(vals url.Values) (Params, error) {
 		params.Cursor = &cursor
 	}
 
-	if offset := vals.Get("offset"); offset != ""{
+	if offset := vals.Get("offset"); offset != "" {
 		params.Offset = &offset
 	}
 

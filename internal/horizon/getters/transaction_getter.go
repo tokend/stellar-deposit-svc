@@ -5,21 +5,83 @@
 package getters
 
 import (
-
-	"github.com/tokend/stellar-deposit-svc/internal/horizon"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
-	logan "gitlab.com/distributed_lab/logan/v3"
+	"gitlab.com/distributed_lab/logan"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-type TransactionGetter struct {
-	horizon.Interface
+type TransactionPager interface {
+	Next() (*regources.TransactionListResponse, error)
+	Prev() (*regources.TransactionListResponse, error)
+	Self() (*regources.TransactionListResponse, error)
 }
 
-func (g *TransactionGetter) TransactionByID(ID string, params query.TransactionParams) (*regources.TransactionResponse, error) {
+type TransactionGetter interface {
+	TransactionPager
+	SetFilters(filters query.TransactionFilters)
+	SetIncludes(includes query.TransactionIncludes)
+	SetPageParams(pageParams page.Params)
+	SetParams(params query.TransactionParams)
+
+	Filter() query.TransactionFilters
+	Include() query.TransactionIncludes
+	Page() page.Params
+
+	ByID(ID string) (*regources.TransactionResponse, error)
+	List() (*regources.TransactionListResponse, error)
+}
+
+type defaultTransactionGetter struct {
+	base   Getter
+	params query.TransactionParams
+
+	currentPageLinks *regources.Links
+}
+
+func NewDefaultTransactionGetter(c *client.Client) *defaultTransactionGetter {
+	return &defaultTransactionGetter{
+		base: New(c),
+	}
+}
+
+func (g *defaultTransactionGetter) SetFilters(filters query.TransactionFilters) {
+	g.params.Filters = filters
+}
+
+func (g *defaultTransactionGetter) SetIncludes(includes query.TransactionIncludes) {
+	g.params.Includes = includes
+}
+
+func (g *defaultTransactionGetter) SetPageParams(pageParams page.Params) {
+	g.params.PageParams = pageParams
+}
+
+func (g *defaultTransactionGetter) SetParams(params query.TransactionParams) {
+	g.params = params
+}
+
+func (g *defaultTransactionGetter) Params() query.TransactionParams {
+	return g.params
+}
+
+func (g *defaultTransactionGetter) Filter() query.TransactionFilters {
+	return g.params.Filters
+}
+
+func (g *defaultTransactionGetter) Include() query.TransactionIncludes {
+	return g.params.Includes
+}
+
+func (g *defaultTransactionGetter) Page() page.Params {
+	return g.params.PageParams
+}
+
+func (g *defaultTransactionGetter) ByID(ID string) (*regources.TransactionResponse, error) {
 	result := &regources.TransactionResponse{}
-	err := g.GetSingle(query.TransactionByID(ID), params, result)
+	err := g.base.GetSingle(query.TransactionByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -29,27 +91,57 @@ func (g *TransactionGetter) TransactionByID(ID string, params query.TransactionP
 	return result, nil
 }
 
-func (g *TransactionGetter) TransactionList(params query.Params) (*regources.TransactionListResponse, error) {
+func (g *defaultTransactionGetter) List() (*regources.TransactionListResponse, error) {
 	result := &regources.TransactionListResponse{}
-	err := g.GetList(query.TransactionList(), params, result)
+	err := g.base.GetList(query.TransactionList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
-			"query_params": params,
+			"query_params": g.params,
 		})
 	}
 
 	return result, nil
 }
 
-func (g *TransactionGetter) Next(links *regources.Links) (*regources.TransactionListResponse, error) {
-	if links == nil {
+func (g *defaultTransactionGetter) Next() (*regources.TransactionListResponse, error) {
+	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	result := &regources.TransactionListResponse{}
-	err := g.PageFromLink(links.Next, result)
+	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get next page", logan.F{
-			"link": links.Next,
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultTransactionGetter) Prev() (*regources.TransactionListResponse, error) {
+	if g.currentPageLinks == nil {
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.TransactionListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultTransactionGetter) Self() (*regources.TransactionListResponse, error) {
+	if g.currentPageLinks == nil {
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.TransactionListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
 		})
 	}
 

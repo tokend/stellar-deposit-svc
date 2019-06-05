@@ -1,31 +1,32 @@
 package config
 
 import (
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
 	"gitlab.com/distributed_lab/figure"
 	"gitlab.com/distributed_lab/kit/comfig"
 	"gitlab.com/distributed_lab/kit/kv"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/tokend/keypair"
 	"gitlab.com/tokend/keypair/figurekeypair"
-	"github.com/tokend/stellar-deposit-svc/internal/horizon"
+	"net/http"
 	"net/url"
 )
 
 type Horizoner interface {
-	Horizon() *horizon.Connector
+	Horizon() *client.Client
 }
 
 type horizoner struct {
 	getter kv.Getter
 	once   comfig.Once
-	value  *horizon.Connector
+	value  *client.Client
 }
 
 func NewHorizoner(getter kv.Getter) Horizoner {
 	return &horizoner{getter: getter}
 }
 
-func (h *horizoner) Horizon() *horizon.Connector {
+func (h *horizoner) Horizon() *client.Client {
 	h.once.Do(func() interface{} {
 		var config struct {
 			Endpoint *url.URL     `fig:"endpoint,required"`
@@ -41,7 +42,7 @@ func (h *horizoner) Horizon() *horizon.Connector {
 			panic(errors.Wrap(err, "failed to figure out horizon"))
 		}
 
-		hrz := horizon.NewConnector(config.Endpoint)
+		hrz := client.New(http.DefaultClient, config.Endpoint)
 		if config.Signer != nil {
 			hrz = hrz.WithSigner(config.Signer)
 		}

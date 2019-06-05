@@ -7,9 +7,8 @@ import (
 )
 
 type config struct {
-	paymentConfig   PaymentConfig
+	stellarConfig   StellarConfig
 	depositConfig   DepositConfig
-	watchlistConfig WatchlistConfig
 	stellar         horizonclient.ClientInterface
 
 	getter kv.Getter
@@ -23,8 +22,7 @@ func (c *config) Stellar() horizonclient.ClientInterface {
 
 type Config interface {
 	DepositConfig() DepositConfig
-	PaymentConfig() PaymentConfig
-	WatchlistConfig() WatchlistConfig
+	StellarConfig() StellarConfig
 	Stellar() horizonclient.ClientInterface
 	Horizoner
 }
@@ -33,6 +31,5 @@ func NewConfig(getter kv.Getter) Config {
 	return &config{
 		getter:    getter,
 		Horizoner: NewHorizoner(getter),
-		stellar:   horizonclient.DefaultTestNetClient,
 	}
 }

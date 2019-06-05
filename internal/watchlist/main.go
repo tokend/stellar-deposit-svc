@@ -83,13 +83,9 @@ func (s *Service) Run(ctx context.Context) {
 }
 
 func (s *Service) getWatchList() ([]Details, error) {
-	params := query.AssetParams{
-		Filters: query.AssetFilters{
-			Owner: &s.owner,
-		},
-	}
+	s.streamer.SetFilters(query.AssetFilters{Owner: &s.owner})
 
-	assetsResponse, err := s.streamer.AssetList(params)
+	assetsResponse, err := s.streamer.List()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get asset list for owner", logan.F{
 			"owner_address": s.owner,
@@ -103,7 +99,7 @@ func (s *Service) getWatchList() ([]Details, error) {
 
 	links := assetsResponse.Links
 	for links.Next != "" {
-		assetsResponse, err = s.streamer.Next(links)
+		assetsResponse, err = s.streamer.Next()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get next page of assetsResponse", logan.F{
 				"links": links,

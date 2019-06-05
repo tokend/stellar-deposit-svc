@@ -2,7 +2,7 @@ package query
 
 import (
 	"fmt"
-	"github.com/tokend/stellar-deposit-svc/internal/horizon/pages"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 )
 
 type AssetFilters struct {
@@ -15,9 +15,21 @@ type AssetIncludes struct {
 }
 
 type AssetParams struct {
-	Includes AssetIncludes
-	Filters AssetFilters
-	PageParams pages.Params
+	Includes   AssetIncludes
+	Filters    AssetFilters
+	PageParams page.Params
+}
+
+func (p AssetParams) Filter() interface{} {
+	return p.Filters
+}
+
+func (p AssetParams) Include() interface{} {
+	return p.Includes
+}
+
+func (p AssetParams) Page() interface{} {
+	return p.PageParams
 }
 
 func AssetByID(code string) string {

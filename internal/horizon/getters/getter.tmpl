@@ -1,0 +1,146 @@
+package getters
+
+
+import (
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
+    "github.com/tokend/stellar-deposit-svc/internal/horizon/query"
+    "gitlab.com/distributed_lab/logan"
+    "gitlab.com/distributed_lab/logan/v3/errors"
+    regources "gitlab.com/tokend/regources/generated"
+)
+
+type TemplatePager interface {
+    Next() (*regources.TemplateListResponse, error)
+    Prev() (*regources.TemplateListResponse, error)
+    Self() (*regources.TemplateListResponse, error)
+}
+
+type TemplateGetter interface {
+    TemplatePager
+    SetFilters(filters query.TemplateFilters)
+    SetIncludes(includes query.TemplateIncludes)
+    SetPageParams(pageParams page.Params)
+    SetParams(params query.TemplateParams)
+
+    Filter() query.TemplateFilters
+    Include() query.TemplateIncludes
+    Page() page.Params
+
+    ByID(ID string) (*regources.TemplateResponse, error)
+    List() (*regources.TemplateListResponse, error)
+}
+
+type defaultTemplateGetter struct {
+	base Getter
+	params query.TemplateParams
+
+	currentPageLinks *regources.Links
+}
+
+func NewDefaultTemplateGetter(c *client.Client) *defaultTemplateGetter {
+	return &defaultTemplateGetter{
+		base: New(c),
+	}
+}
+
+
+func (g *defaultTemplateGetter) SetFilters(filters query.TemplateFilters) {
+    g.params.Filters = filters
+}
+
+func (g *defaultTemplateGetter) SetIncludes(includes query.TemplateIncludes) {
+    g.params.Includes = includes
+}
+
+func (g *defaultTemplateGetter) SetPageParams(pageParams page.Params) {
+    g.params.PageParams = pageParams
+}
+
+func (g *defaultTemplateGetter) SetParams(params query.TemplateParams) {
+    g.params = params
+}
+
+func (g *defaultTemplateGetter) Params() query.TemplateParams{
+    return g.params
+}
+
+func (g *defaultTemplateGetter) Filter() query.TemplateFilters{
+    return g.params.Filters
+}
+
+func (g *defaultTemplateGetter) Include() query.TemplateIncludes{
+    return g.params.Includes
+}
+
+func (g *defaultTemplateGetter) Page() page.Params{
+    return g.params.PageParams
+}
+
+func (g *defaultTemplateGetter) ByID(ID string) (*regources.TemplateResponse, error) {
+	result := &regources.TemplateResponse{}
+	err := g.base.GetSingle(query.TemplateByID(ID), g.params, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
+			"id": ID,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultTemplateGetter) List() (*regources.TemplateListResponse, error) {
+	result := &regources.TemplateListResponse{}
+	err := g.base.GetList(query.TemplateList(), g.params, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get records list", logan.F{
+			"query_params": g.params,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultTemplateGetter) Next() (*regources.TemplateListResponse, error){
+	if g.currentPageLinks == nil{
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.TemplateListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultTemplateGetter) Prev() (*regources.TemplateListResponse, error){
+	if g.currentPageLinks == nil{
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.TemplateListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultTemplateGetter) Self() (*regources.TemplateListResponse, error){
+	if g.currentPageLinks == nil{
+		return nil, errors.New("Empty links")
+	}
+	result := &regources.TemplateListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}

@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/google/jsonapi"
-	regources "gitlab.com/tokend/regources/generated"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
 	"net/http"
+
+	"github.com/google/jsonapi"
+	regources "gitlab.com/tokend/regources/generated"
 
 	"gitlab.com/distributed_lab/logan/v3/errors"
 )
@@ -26,7 +27,7 @@ type Error interface {
 }
 
 type Interface interface {
-	Submit(ctx context.Context, envelope string)
+	Submit(ctx context.Context, envelope string) (*regources.TransactionResponse, error)
 }
 
 type submitter struct {
@@ -51,6 +52,7 @@ func (s *submitter) Submit(ctx context.Context, envelope string) (*regources.Tra
 	if err == nil {
 		var success regources.TransactionResponse
 		if err := json.Unmarshal(response, &success); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal transaction response")
 		}
 		return &success, nil
 	}

@@ -1,0 +1,9 @@
+stellar:
+  target_address: ""
+  delay: 10s
+  is_testnet: true
+
+deposit:
+  asset_owner: ""
+  asset_issuer: ""
+  delay: 10s
