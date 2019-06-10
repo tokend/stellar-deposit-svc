@@ -2,7 +2,9 @@ package issuer
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
+	"github.com/tokend/stellar-deposit-svc/internal/horizon/submit"
 	"github.com/tokend/stellar-deposit-svc/internal/services/payment"
 	"github.com/tokend/stellar-deposit-svc/internal/services/watchlist"
 	"gitlab.com/distributed_lab/logan/v3"
@@ -10,6 +12,7 @@ import (
 	"gitlab.com/distributed_lab/running"
 	"gitlab.com/tokend/addrstate"
 	"gitlab.com/tokend/go/amount"
+	"gitlab.com/tokend/go/hash"
 	"gitlab.com/tokend/go/xdrbuild"
 	"gitlab.com/tokend/keypair"
 	regources "gitlab.com/tokend/regources/generated"
@@ -25,7 +28,7 @@ type details struct {
 }
 
 type txSubmitter interface {
-	Submit(ctx context.Context, envelope string) (*regources.TransactionResponse, error)
+	Submit(ctx context.Context, envelope string, waitIngest bool) (*regources.TransactionResponse, error)
 }
 
 type transactionStreamer interface {
@@ -92,6 +95,7 @@ func (s *Service) Run(ctx context.Context) {
 		},
 		s.streamer,
 	)
+	s.log.WithField("asset", s.asset.ID).Info("Started issuer service")
 	running.WithBackOff(ctx, s.log, "tokend-issuer", func(ctx context.Context) error {
 
 		for pmnt := range s.ch {
@@ -131,27 +135,38 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal payment details")
 	}
+
+	refHash := hash.Hash([]byte(payment.ID))
+
+	reference := hex.EncodeToString(refHash[:])
+
+	amountToIssue := amount.MustParseU(payment.Amount)
+
 	envelope, err := s.builder.Transaction(s.owner).Op(xdrbuild.CreateIssuanceRequest{
-		Reference: payment.ID,
+		Reference: reference,
 		Asset:     s.asset.ID,
-		Amount:    amount.MustParseU(payment.Amount),
+		Amount:    amountToIssue,
 		Receiver:  *balance,
 		Details:   json.RawMessage(detailsbb),
 	}).Sign(s.issuer).Marshal()
 	if err != nil {
 		return errors.Wrap(err, "failed to craft transaction")
 	}
-
 	err = submitEnvelope(ctx, envelope, s.txSubmitter)
 	if err != nil {
 		return errors.Wrap(err, "failed to submit issuance tx")
 	}
-
 	return nil
 }
 
 func submitEnvelope(ctx context.Context, envelope string, submitter txSubmitter) error {
-	_, err := submitter.Submit(ctx, envelope)
+	_, err := submitter.Submit(ctx, envelope, false)
+	if submitFailure, ok := err.(submit.TxFailure); ok {
+		if len(submitFailure.OperationResultCodes) == 1 &&
+			submitFailure.OperationResultCodes[0] == "op_reference_duplication" {
+			return nil
+		}
+	}
 	if err != nil {
 		return errors.Wrap(err, "Horizon SubmitResult has error")
 	}

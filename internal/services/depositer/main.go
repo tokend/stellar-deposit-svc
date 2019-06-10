@@ -68,7 +68,6 @@ func (s *Service) spawn(ctx context.Context, details watchlist.Details) {
 	if s.spawned[details.Asset.ID] {
 		return
 	}
-
 	s.wg.Add(2)
 	paymentStreamer := payment.NewService(payment.Opts{
 		Client:       s.config.Stellar(),
@@ -88,7 +87,7 @@ func (s *Service) spawn(ctx context.Context, details watchlist.Details) {
 			getters.NewDefaultTransactionHandler(s.config.Horizon()),
 		),
 		Builder:     s.builder,
-
+		Signer: s.config.DepositConfig().AssetIssuer,
 		TxSubmitter: submit.New(s.config.Horizon()),
 		Ch:          payments,
 		WG:          s.wg,

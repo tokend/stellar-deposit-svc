@@ -10,3 +10,6 @@ deposit:
 horizon:
   endpoint:
   signer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+
+log:
+  level: info

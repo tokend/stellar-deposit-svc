@@ -2,9 +2,11 @@ package config
 
 import (
 	"github.com/stellar/go/clients/horizonclient"
+	"gitlab.com/distributed_lab/figure"
 	"gitlab.com/distributed_lab/kit/comfig"
 	"gitlab.com/distributed_lab/kit/kv"
 	"gitlab.com/distributed_lab/logan/v3"
+	"gitlab.com/distributed_lab/logan/v3/errors"
 )
 
 type config struct {
@@ -18,9 +20,6 @@ type config struct {
 	Horizoner
 }
 
-func (c *config) Log() *logan.Entry {
-	return c.log
-}
 
 type Config interface {
 	DepositConfig() DepositConfig
@@ -34,23 +33,32 @@ func NewConfig(getter kv.Getter) Config {
 	return &config{
 		getter:    getter,
 		Horizoner: NewHorizoner(getter),
-		log: logan.New().Level(logan.DebugLevel),
 	}
 }
 
 
 func (c *config) Stellar() horizonclient.ClientInterface{
 	c.once.Do(func() interface{} {
-		var result horizonclient.ClientInterface
+		var result StellarConfig
 
-		conf := c.StellarConfig()
-		switch conf.IsTestNet {
-		case true:
-			result = horizonclient.DefaultTestNetClient
-		case false:
-			result = horizonclient.DefaultPublicNetClient
+		err := figure.
+			Out(&result).
+			With(figure.BaseHooks).
+			From(kv.MustGetStringMap(c.getter, "stellar")).
+			Please()
+		if err != nil {
+			panic(errors.Wrap(err, "failed to figure out stellar"))
 		}
-		c.stellar = result
+		var cl horizonclient.ClientInterface
+		switch result.IsTestNet {
+		case true:
+			cl = horizonclient.DefaultTestNetClient
+		case false:
+			cl = horizonclient.DefaultPublicNetClient
+		}
+		c.stellar = cl
+
+		c.stellarConfig = result
 		return nil
 	})
 

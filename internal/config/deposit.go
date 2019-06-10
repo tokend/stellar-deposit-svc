@@ -11,6 +11,7 @@ import (
 
 type DepositConfig struct {
 	AssetOwner keypair.Address `fig:"asset_owner"`
+	AssetIssuer keypair.Full `fig:"asset_issuer"`
 	Delay time.Duration `fig:"delay"`
 }
 func (c *config) DepositConfig() DepositConfig {
