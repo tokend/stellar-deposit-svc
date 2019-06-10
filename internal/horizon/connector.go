@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/submit"
-	"net/http"
-	"net/url"
 
 
 	"gitlab.com/distributed_lab/logan/v3/errors"
@@ -26,10 +24,9 @@ type connector struct {
 	*client.Client
 }
 
-func NewConnector(base *url.URL) *connector {
-	cl := client.New(http.DefaultClient, base)
+func NewConnector(c *client.Client) *connector {
 	return &connector{
-		Client: cl,
+		Client: c,
 	}
 }
 
@@ -61,6 +58,7 @@ func (c *connector) Builder() (*xdrbuild.Builder, error) {
 	}
 
 	return xdrbuild.NewBuilder(state.Data.Attributes.NetworkPassphrase, state.Data.Attributes.TxExpirationPeriod), nil
+	//return xdrbuild.NewBuilder("TokenD Developer Network", 601200), nil
 }
 
 func (c *connector) Submitter() (submit.Interface, error) {

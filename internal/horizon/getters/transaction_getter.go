@@ -20,7 +20,6 @@ type TransactionPager interface {
 }
 
 type TransactionGetter interface {
-	TransactionPager
 	SetFilters(filters query.TransactionFilters)
 	SetIncludes(includes query.TransactionIncludes)
 	SetPageParams(pageParams page.Params)
@@ -34,52 +33,57 @@ type TransactionGetter interface {
 	List() (*regources.TransactionListResponse, error)
 }
 
-type defaultTransactionGetter struct {
+type TransactionHandler interface {
+	TransactionGetter
+	TransactionPager
+}
+
+type defaultTransactionHandler struct {
 	base   Getter
 	params query.TransactionParams
 
 	currentPageLinks *regources.Links
 }
 
-func NewDefaultTransactionGetter(c *client.Client) *defaultTransactionGetter {
-	return &defaultTransactionGetter{
+func NewDefaultTransactionHandler(c *client.Client) *defaultTransactionHandler {
+	return &defaultTransactionHandler{
 		base: New(c),
 	}
 }
 
-func (g *defaultTransactionGetter) SetFilters(filters query.TransactionFilters) {
+func (g *defaultTransactionHandler) SetFilters(filters query.TransactionFilters) {
 	g.params.Filters = filters
 }
 
-func (g *defaultTransactionGetter) SetIncludes(includes query.TransactionIncludes) {
+func (g *defaultTransactionHandler) SetIncludes(includes query.TransactionIncludes) {
 	g.params.Includes = includes
 }
 
-func (g *defaultTransactionGetter) SetPageParams(pageParams page.Params) {
+func (g *defaultTransactionHandler) SetPageParams(pageParams page.Params) {
 	g.params.PageParams = pageParams
 }
 
-func (g *defaultTransactionGetter) SetParams(params query.TransactionParams) {
+func (g *defaultTransactionHandler) SetParams(params query.TransactionParams) {
 	g.params = params
 }
 
-func (g *defaultTransactionGetter) Params() query.TransactionParams {
+func (g *defaultTransactionHandler) Params() query.TransactionParams {
 	return g.params
 }
 
-func (g *defaultTransactionGetter) Filter() query.TransactionFilters {
+func (g *defaultTransactionHandler) Filter() query.TransactionFilters {
 	return g.params.Filters
 }
 
-func (g *defaultTransactionGetter) Include() query.TransactionIncludes {
+func (g *defaultTransactionHandler) Include() query.TransactionIncludes {
 	return g.params.Includes
 }
 
-func (g *defaultTransactionGetter) Page() page.Params {
+func (g *defaultTransactionHandler) Page() page.Params {
 	return g.params.PageParams
 }
 
-func (g *defaultTransactionGetter) ByID(ID string) (*regources.TransactionResponse, error) {
+func (g *defaultTransactionHandler) ByID(ID string) (*regources.TransactionResponse, error) {
 	result := &regources.TransactionResponse{}
 	err := g.base.GetPage(query.TransactionByID(ID), g.params, result)
 	if err != nil {
@@ -87,11 +91,10 @@ func (g *defaultTransactionGetter) ByID(ID string) (*regources.TransactionRespon
 			"id": ID,
 		})
 	}
-
 	return result, nil
 }
 
-func (g *defaultTransactionGetter) List() (*regources.TransactionListResponse, error) {
+func (g *defaultTransactionHandler) List() (*regources.TransactionListResponse, error) {
 	result := &regources.TransactionListResponse{}
 	err := g.base.GetPage(query.TransactionList(), g.params, result)
 	if err != nil {
@@ -99,13 +102,16 @@ func (g *defaultTransactionGetter) List() (*regources.TransactionListResponse, e
 			"query_params": g.params,
 		})
 	}
-
+	g.currentPageLinks = result.Links
 	return result, nil
 }
 
-func (g *defaultTransactionGetter) Next() (*regources.TransactionListResponse, error) {
+func (g *defaultTransactionHandler) Next() (*regources.TransactionListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.Next == "" {
+		return nil, nil
 	}
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
@@ -118,10 +124,14 @@ func (g *defaultTransactionGetter) Next() (*regources.TransactionListResponse, e
 	return result, nil
 }
 
-func (g *defaultTransactionGetter) Prev() (*regources.TransactionListResponse, error) {
+func (g *defaultTransactionHandler) Prev() (*regources.TransactionListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
+	if g.currentPageLinks.Prev == "" {
+		return nil, nil
+	}
+
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
 	if err != nil {
@@ -133,9 +143,12 @@ func (g *defaultTransactionGetter) Prev() (*regources.TransactionListResponse, e
 	return result, nil
 }
 
-func (g *defaultTransactionGetter) Self() (*regources.TransactionListResponse, error) {
+func (g *defaultTransactionHandler) Self() (*regources.TransactionListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.Self == "" {
+		return nil, nil
 	}
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Self, result)

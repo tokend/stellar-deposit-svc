@@ -74,7 +74,18 @@ func (s *Service) Run(ctx context.Context) {
 	}
 	running.WithBackOff(ctx, s.log, "stellar-payment-listener", func(ctx context.Context) error {
 		for _, record := range page.Embedded.Records {
-			payment := record.(operations.Payment)
+			payment, ok := record.(operations.Payment)
+			if !ok {
+				continue
+			}
+			if payment.Asset.Type != string(s.assetType) {
+				continue
+			}
+
+			if payment.Asset.Type != "native" && payment.Asset.Code != s.assetCode {
+				continue
+			}
+
 			tx, err := s.client.TransactionDetail(record.GetTransactionHash())
 			if err != nil {
 				return errors.Wrap(err, "failed to get parent transaction of payment", logan.F{

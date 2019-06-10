@@ -44,10 +44,7 @@ func (g *getter) PageFromLink(link string, v interface{}) error {
 }
 
 func (g *getter) GetPage(endpoint string, params query.Params, result interface{}) error {
-	q, err := query.Prepare(params)
-	if err != nil {
-		return errors.Wrap(err, "failed to prepare query")
-	}
+	q := params.Prepare()
 	uri, err := g.Resolve().URI(endpoint, q)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve request URI", logan.F{

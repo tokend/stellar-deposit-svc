@@ -16,7 +16,6 @@ type TemplatePager interface {
 }
 
 type TemplateGetter interface {
-    TemplatePager
     SetFilters(filters query.TemplateFilters)
     SetIncludes(includes query.TemplateIncludes)
     SetPageParams(pageParams page.Params)
@@ -30,53 +29,58 @@ type TemplateGetter interface {
     List() (*regources.TemplateListResponse, error)
 }
 
-type defaultTemplateGetter struct {
+type TemplateHandler interface {
+    TemplateGetter
+    TemplatePager
+}
+
+type defaultTemplateHandler struct {
 	base Getter
 	params query.TemplateParams
 
 	currentPageLinks *regources.Links
 }
 
-func NewDefaultTemplateGetter(c *client.Client) *defaultTemplateGetter {
-	return &defaultTemplateGetter{
+func NewDefaultTemplateHandler(c *client.Client) *defaultTemplateHandler {
+	return &defaultTemplateHandler{
 		base: New(c),
 	}
 }
 
 
-func (g *defaultTemplateGetter) SetFilters(filters query.TemplateFilters) {
+func (g *defaultTemplateHandler) SetFilters(filters query.TemplateFilters) {
     g.params.Filters = filters
 }
 
-func (g *defaultTemplateGetter) SetIncludes(includes query.TemplateIncludes) {
+func (g *defaultTemplateHandler) SetIncludes(includes query.TemplateIncludes) {
     g.params.Includes = includes
 }
 
-func (g *defaultTemplateGetter) SetPageParams(pageParams page.Params) {
+func (g *defaultTemplateHandler) SetPageParams(pageParams page.Params) {
     g.params.PageParams = pageParams
 }
 
-func (g *defaultTemplateGetter) SetParams(params query.TemplateParams) {
+func (g *defaultTemplateHandler) SetParams(params query.TemplateParams) {
     g.params = params
 }
 
-func (g *defaultTemplateGetter) Params() query.TemplateParams{
+func (g *defaultTemplateHandler) Params() query.TemplateParams{
     return g.params
 }
 
-func (g *defaultTemplateGetter) Filter() query.TemplateFilters{
+func (g *defaultTemplateHandler) Filter() query.TemplateFilters{
     return g.params.Filters
 }
 
-func (g *defaultTemplateGetter) Include() query.TemplateIncludes{
+func (g *defaultTemplateHandler) Include() query.TemplateIncludes{
     return g.params.Includes
 }
 
-func (g *defaultTemplateGetter) Page() page.Params{
+func (g *defaultTemplateHandler) Page() page.Params{
     return g.params.PageParams
 }
 
-func (g *defaultTemplateGetter) ByID(ID string) (*regources.TemplateResponse, error) {
+func (g *defaultTemplateHandler) ByID(ID string) (*regources.TemplateResponse, error) {
 	result := &regources.TemplateResponse{}
 	err := g.base.GetPage(query.TemplateByID(ID), g.params, result)
 	if err != nil {
@@ -84,11 +88,10 @@ func (g *defaultTemplateGetter) ByID(ID string) (*regources.TemplateResponse, er
 			"id": ID,
 		})
 	}
-
 	return result, nil
 }
 
-func (g *defaultTemplateGetter) List() (*regources.TemplateListResponse, error) {
+func (g *defaultTemplateHandler) List() (*regources.TemplateListResponse, error) {
 	result := &regources.TemplateListResponse{}
 	err := g.base.GetPage(query.TemplateList(), g.params, result)
 	if err != nil {
@@ -96,13 +99,16 @@ func (g *defaultTemplateGetter) List() (*regources.TemplateListResponse, error) 
 			"query_params": g.params,
 		})
 	}
-
+    g.currentPageLinks = result.Links
 	return result, nil
 }
 
-func (g *defaultTemplateGetter) Next() (*regources.TemplateListResponse, error){
+func (g *defaultTemplateHandler) Next() (*regources.TemplateListResponse, error){
 	if g.currentPageLinks == nil{
 		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.Next == "" {
+	    return nil, nil
 	}
 	result := &regources.TemplateListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
@@ -115,10 +121,14 @@ func (g *defaultTemplateGetter) Next() (*regources.TemplateListResponse, error){
 	return result, nil
 }
 
-func (g *defaultTemplateGetter) Prev() (*regources.TemplateListResponse, error){
+func (g *defaultTemplateHandler) Prev() (*regources.TemplateListResponse, error){
 	if g.currentPageLinks == nil{
 		return nil, errors.New("Empty links")
 	}
+	if g.currentPageLinks.Prev == "" {
+    	    return nil, nil
+    }
+
 	result := &regources.TemplateListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
 	if err != nil {
@@ -130,10 +140,13 @@ func (g *defaultTemplateGetter) Prev() (*regources.TemplateListResponse, error){
 	return result, nil
 }
 
-func (g *defaultTemplateGetter) Self() (*regources.TemplateListResponse, error){
+func (g *defaultTemplateHandler) Self() (*regources.TemplateListResponse, error){
 	if g.currentPageLinks == nil{
 		return nil, errors.New("Empty links")
 	}
+	if g.currentPageLinks.Self == "" {
+    	    return nil, nil
+    }
 	result := &regources.TemplateListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
 	if err != nil {

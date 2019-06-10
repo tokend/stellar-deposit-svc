@@ -18,13 +18,13 @@ type StellarDetails struct {
 	StellarDeposit     bool   `json:"stellar_deposit"`
 	AssetType          string `json:"stellar_asset_type"`
 	Code               string `json:"stellar_asset_code"`
-	ExternalSystemType int32  `json:"external_system_type"`
+	ExternalSystemType int32  `json:"external_system_type,string"`
 }
 
 func (s StellarDetails) Validate() error {
 	return ValidateStruct(&s,
 		Field(&s.StellarDeposit, Required),
-		Field(&s.Code, Required, Length(4, 12)),
+		Field(&s.Code, Required, Length(1, 12)),
 		Field(&s.AssetType, Required),
 		Field(&s.ExternalSystemType, Required, Min(1)),
 	)
@@ -36,7 +36,7 @@ type Details struct {
 }
 
 type Service struct {
-	streamer getters.AssetGetter
+	streamer getters.AssetHandler
 	log      *logan.Entry
 	owner    string
 	timeout  time.Duration
@@ -45,7 +45,7 @@ type Service struct {
 }
 
 type Opts struct {
-	Streamer   getters.AssetGetter
+	Streamer   getters.AssetHandler
 	Log        *logan.Entry
 	AssetOwner string
 	Timeout    time.Duration
@@ -53,12 +53,13 @@ type Opts struct {
 }
 
 func New(opts Opts) *Service {
-	ch := make(chan Details, 100)
+	ch := make(chan Details)
 	return &Service{
 		streamer: opts.Streamer,
 		owner:    opts.AssetOwner,
 		log:      opts.Log.WithField("service", "watchlist"),
 		pipe:     ch,
+		timeout: opts.Timeout,
 	}
 }
 
@@ -98,7 +99,7 @@ func (s *Service) getWatchList() ([]Details, error) {
 	}
 
 	links := assetsResponse.Links
-	for links.Next != "" {
+	for len(assetsResponse.Data) > 0 {
 		assetsResponse, err = s.streamer.Next()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get next page of assetsResponse", logan.F{
@@ -128,6 +129,9 @@ func (s *Service) filter(assets []regources.Asset) ([]Details, error) {
 				"asset_code":    asset.ID,
 				"asset_details": details,
 			})
+		}
+		if !stellarDetails.StellarDeposit {
+			continue
 		}
 
 		if err = stellarDetails.Validate(); err != nil {

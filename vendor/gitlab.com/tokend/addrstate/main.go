@@ -19,7 +19,7 @@ type StateMutator interface {
 // StreamTransactions streams transactions fetched for specified filters.
 type TXStreamer interface {
 	StreamTransactions(ctx context.Context, changeTypes, entryTypes []int,
-	) (<-chan regources.TransactionResponse, <-chan error)
+	) (<-chan regources.TransactionListResponse, <-chan error)
 }
 
 // Watcher watches what comes from txStreamer and what StateMutators do
@@ -89,37 +89,39 @@ func (w *Watcher) run(ctx context.Context) {
 	for {
 		select {
 		case txResp := <-txStream:
-			tx := txResp.Data
-			// go through all ledger changes
-			changes := tx.Relationships.LedgerEntryChanges
-			if changes != nil {
-				for _, changeKey := range changes.Data {
-					// apply all mutators
-					change := txResp.Included.MustLedgerEntryChange(changeKey)
-					ledgerEntryChange, err := convertLedgerEntryChange(*change)
-					if err != nil {
-						w.log.WithError(err).Error("failed to get state update", logan.F{
-							"entry_type":     change.Attributes.EntryType,
-							"effect":         change.Attributes.ChangeType,
-							"transaction_id": tx.ID,
-						})
-						return
-					}
-					for _, mutator := range w.mutators {
-						stateUpdate := mutator.GetStateUpdate(ledgerEntryChange)
-						w.state.Mutate(tx.Attributes.CreatedAt, stateUpdate)
+			txs := txResp.Data
+			for _, tx := range txs {
+				// go through all ledger changes
+				changes := tx.Relationships.LedgerEntryChanges
+				if changes != nil {
+					for _, changeKey := range changes.Data {
+						// apply all mutators
+						change := txResp.Included.MustLedgerEntryChange(changeKey)
+						ledgerEntryChange, err := convertLedgerEntryChange(*change)
+						if err != nil {
+							w.log.WithError(err).Error("failed to get state update", logan.F{
+								"entry_type":     change.Attributes.EntryType,
+								"effect":         change.Attributes.ChangeType,
+								"transaction_id": tx.ID,
+							})
+							return
+						}
+						for _, mutator := range w.mutators {
+							stateUpdate := mutator.GetStateUpdate(ledgerEntryChange)
+							w.state.Mutate(tx.Attributes.CreatedAt, stateUpdate)
+						}
 					}
 				}
-			}
 
-			// if we made it here it's safe to bump head cursor
-			w.head = txResp.Meta.LatestLedgerCloseTime
+				// if we made it here it's safe to bump head cursor
+				w.head = txResp.Meta.LatestLedgerCloseTime
 
-			// must be in select to listen new updates.
-			// If not gets all updates before time it was run and then w.headUpdate locks
-			select {
-			case w.headUpdate <- struct{}{}:
-			default:
+				// must be in select to listen new updates.
+				// If not gets all updates before time it was run and then w.headUpdate locks
+				select {
+				case w.headUpdate <- struct{}{}:
+				default:
+				}
 			}
 		case err := <-txStreamErrs:
 			w.log.WithError(err).Warn("TXStreamer sent error into channel.")

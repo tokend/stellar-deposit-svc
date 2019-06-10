@@ -6,7 +6,11 @@ import (
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/getters"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
+	"gitlab.com/distributed_lab/logan/v3"
+	"gitlab.com/distributed_lab/logan/v3/errors"
+	"gitlab.com/distributed_lab/running"
 	regources "gitlab.com/tokend/regources/generated"
+	"time"
 )
 
 const (
@@ -14,19 +18,16 @@ const (
 )
 
 type Streamer struct {
-	getters.TransactionGetter
+	getters.TransactionHandler
 }
 
-func NewStreamer(transactionGetter getters.TransactionGetter) *Streamer {
-	return &Streamer{TransactionGetter: transactionGetter}
+func NewStreamer(handler getters.TransactionHandler) *Streamer {
+	return &Streamer{handler}
 }
-
 func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTypes []int,
-) (<-chan regources.TransactionResponse, <-chan error) {
-	txChan := make(chan regources.TransactionResponse)
+) (<-chan regources.TransactionListResponse, <-chan error) {
+	txChan := make(chan regources.TransactionListResponse)
 	errChan := make(chan error)
-	defer close(txChan)
-	defer close(errChan)
 	limit := fmt.Sprintf("%d", streamPageLimit)
 	s.SetFilters(query.TransactionFilters{
 		ChangeTypes: changeTypes,
@@ -41,37 +42,22 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 
 	txPage, err := s.List()
 
-	processedOnPage := make(map[string]bool)
 	go func() {
-		for {
+		defer close(txChan)
+		defer close(errChan)
+		running.WithBackOff(ctx, logan.New(), "tx-streamer", func(ctx context.Context) error {
 			if err != nil {
 				errChan <- err
-				return
+				return errors.Wrap(err, "error occured while streaming transactions")
 			}
-			tx := regources.TransactionResponse{}
-			for _, transaction := range txPage.Data {
-				if _, ok := processedOnPage[transaction.ID]; ok {
-					continue
-				}
-				processedOnPage[transaction.ID] = true
-
-				tx.Data = transaction
-				tx.Meta = txPage.Meta
-
-				for _, relation := range transaction.Relationships.LedgerEntryChanges.Data {
-					tx.Included.Add(txPage.Included.MustLedgerEntryChange(relation))
-				}
-
-				txChan <- tx
+			if txPage != nil && len(txPage.Data) != 0 {
+				txChan <- *txPage
 			}
 
-			if len(txPage.Data) < streamPageLimit {
-				txPage, err = s.Self()
-			} else {
-				txPage, err = s.Next()
-				processedOnPage = make(map[string]bool)
-			}
-		}
+			txPage, err = s.Next()
+
+			return nil
+		}, 10*time.Second, 15*time.Second, 5*time.Minute)
 	}()
 
 	return txChan, errChan

@@ -3,15 +3,16 @@ package query
 import (
 	"fmt"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
+	"net/url"
 )
 
 type AssetFilters struct {
-	Owner  *string `filter:"owner"`
-	Policy *uint32 `filter:"policy"`
+	Owner  *string
+	Policy *uint32
 }
 
 type AssetIncludes struct {
-	Owner bool `include:"owner"`
+	Owner bool
 }
 
 type AssetParams struct {
@@ -20,16 +21,27 @@ type AssetParams struct {
 	PageParams page.Params
 }
 
-func (p AssetParams) Filter() interface{} {
-	return p.Filters
+func (p AssetParams) Prepare() url.Values {
+	result := url.Values{}
+	p.Filters.prepare(&result)
+	p.PageParams.Prepare(&result)
+	p.Includes.prepare(&result)
+	return result
 }
 
-func (p AssetParams) Include() interface{} {
-	return p.Includes
+func (p AssetFilters) prepare(result *url.Values) {
+	if p.Policy != nil {
+		result.Add("filter[policy]", fmt.Sprintf("%d", *p.Policy))
+	}
+	if p.Owner != nil {
+		result.Add("filter[owner]", fmt.Sprintf("%s", *p.Owner))
+	}
 }
 
-func (p AssetParams) Page() interface{} {
-	return p.PageParams
+func (p AssetIncludes) prepare(result *url.Values) {
+	if p.Owner {
+		result.Add("include", "owner")
+	}
 }
 
 func AssetByID(code string) string {

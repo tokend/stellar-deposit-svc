@@ -17,13 +17,20 @@ import (
 	"time"
 )
 
+type details struct {
+	TxHash    string `json:"tx_hash"`
+	TxMemo    string `json:"tx_memo"`
+	From      string `json:"from"`
+	PaymentID string `json:"payment_id"`
+}
+
 type txSubmitter interface {
 	Submit(ctx context.Context, envelope string) (*regources.TransactionResponse, error)
 }
 
 type transactionStreamer interface {
 	StreamTransactions(ctx context.Context, changeTypes, entryTypes []int,
-	) (<-chan regources.TransactionResponse, <-chan error)
+	) (<-chan regources.TransactionListResponse, <-chan error)
 }
 
 // addressProvider must be implemented by WatchAddress storage to pass into Service constructor.
@@ -37,6 +44,7 @@ type Service struct {
 	txSubmitter     txSubmitter
 	builder         *xdrbuild.Builder
 	asset           watchlist.Details
+	owner           keypair.Address
 	issuer          keypair.Full
 	log             *logan.Entry
 	addressProvider addressProvider
@@ -49,7 +57,7 @@ type Opts struct {
 	TxSubmitter  txSubmitter
 	Builder      *xdrbuild.Builder
 	AssetDetails watchlist.Details
-	AssetIssuer  keypair.Full
+	Signer       keypair.Full
 	Log          *logan.Entry
 	WG           *sync.WaitGroup
 	Ch           <-chan payment.Details
@@ -59,15 +67,16 @@ func New(opts Opts) *Service {
 
 	return &Service{
 		asset:       opts.AssetDetails,
-		issuer:      opts.AssetIssuer,
+		issuer:      opts.Signer,
 		streamer:    opts.Streamer,
 		builder:     opts.Builder,
 		txSubmitter: opts.TxSubmitter,
 		log: opts.Log.WithFields(logan.F{
 			"asset_code": opts.AssetDetails.ID,
 		}),
-		ch: opts.Ch,
-		wg: opts.WG,
+		owner: keypair.MustParseAddress(opts.AssetDetails.Relationships.Owner.Data.ID),
+		ch:    opts.Ch,
+		wg:    opts.WG,
 	}
 }
 
@@ -85,13 +94,13 @@ func (s *Service) Run(ctx context.Context) {
 	)
 	running.WithBackOff(ctx, s.log, "tokend-issuer", func(ctx context.Context) error {
 
-		for payment := range s.ch {
-			err := s.processPayment(ctx, payment)
+		for pmnt := range s.ch {
+			err := s.processPayment(ctx, pmnt)
 			if err != nil {
 				return errors.Wrap(err, "failed to process payment", logan.F{
-					"tx_hash":    payment.TxHash,
-					"tx_memo":    payment.TxMemo,
-					"payment_id": payment.ID,
+					"tx_hash":    pmnt.TxHash,
+					"tx_memo":    pmnt.TxMemo,
+					"payment_id": pmnt.ID,
 				})
 			}
 		}
@@ -111,18 +120,23 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 		//todo
 		return nil
 	}
-	detailsbb, err := json.Marshal(payment)
+
+	issueDetails := details{
+		TxMemo:    payment.TxMemo,
+		TxHash:    payment.TxHash,
+		From:      payment.From,
+		PaymentID: payment.GetID(),
+	}
+	detailsbb, err := json.Marshal(issueDetails)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal payment details")
 	}
-	tasks := uint32(0)
-	envelope, err := s.builder.Transaction(s.issuer).Op(xdrbuild.CreateIssuanceRequest{
+	envelope, err := s.builder.Transaction(s.owner).Op(xdrbuild.CreateIssuanceRequest{
 		Reference: payment.ID,
 		Asset:     s.asset.ID,
 		Amount:    amount.MustParseU(payment.Amount),
 		Receiver:  *balance,
 		Details:   json.RawMessage(detailsbb),
-		AllTasks:  &tasks,
 	}).Sign(s.issuer).Marshal()
 	if err != nil {
 		return errors.Wrap(err, "failed to craft transaction")
@@ -136,12 +150,10 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 	return nil
 }
 
-func submitEnvelope(ctx context.Context, envelope string, submitter txSubmitter) (error) {
-	result, err := submitter.Submit(ctx, envelope)
+func submitEnvelope(ctx context.Context, envelope string, submitter txSubmitter) error {
+	_, err := submitter.Submit(ctx, envelope)
 	if err != nil {
-		return errors.Wrap(err, "Horizon SubmitResult has error", logan.F{
-			"submit_result": result,
-		})
+		return errors.Wrap(err, "Horizon SubmitResult has error")
 	}
 
 	return nil

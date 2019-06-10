@@ -1,9 +1,12 @@
 stellar:
-  target_address: ""
-  delay: 10s
-  is_testnet: true
+  target_address: "G_STELLAR_DEPOSIT_ADDRESS"
+  delay: 10s # how often to check for new payments
+  is_testnet: true # set true for stellar testnet
 
 deposit:
-  asset_owner: ""
-  asset_issuer: ""
-  delay: 10s
+  asset_owner: "G_SOME_VALID_ADDRESS"
+  delay: 10s # how often to check for new assets depositable thru stellar
+
+horizon:
+  endpoint:
+  signer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets

@@ -18,10 +18,6 @@ type config struct {
 	Horizoner
 }
 
-func (c *config) Stellar() horizonclient.ClientInterface {
-	return c.stellar
-}
-
 func (c *config) Log() *logan.Entry {
 	return c.log
 }
@@ -38,6 +34,25 @@ func NewConfig(getter kv.Getter) Config {
 	return &config{
 		getter:    getter,
 		Horizoner: NewHorizoner(getter),
-		log: logan.New(),
+		log: logan.New().Level(logan.DebugLevel),
 	}
+}
+
+
+func (c *config) Stellar() horizonclient.ClientInterface{
+	c.once.Do(func() interface{} {
+		var result horizonclient.ClientInterface
+
+		conf := c.StellarConfig()
+		switch conf.IsTestNet {
+		case true:
+			result = horizonclient.DefaultTestNetClient
+		case false:
+			result = horizonclient.DefaultPublicNetClient
+		}
+		c.stellar = result
+		return nil
+	})
+
+	return c.stellar
 }

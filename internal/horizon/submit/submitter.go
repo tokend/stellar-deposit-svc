@@ -57,8 +57,10 @@ func (s *submitter) Submit(ctx context.Context, envelope string) (*regources.Tra
 		return &success, nil
 	}
 
-	cerr := errors.Cause(err).(Error)
-
+	cerr, ok := errors.Cause(err).(Error)
+	if !ok {
+		return nil, err
+	}
 	// go through known response codes and try to build meaningful result
 	switch cerr.Status() {
 	case http.StatusGatewayTimeout: // timeout

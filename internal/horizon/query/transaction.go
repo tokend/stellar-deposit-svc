@@ -3,6 +3,8 @@ package query
 import (
 	"fmt"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
+	"net/url"
+	"strings"
 )
 
 func TransactionList() string {
@@ -14,12 +16,12 @@ func TransactionByID(id string) string {
 }
 
 type TransactionFilters struct {
-	EntryTypes  []int `filter:"ledger_entry_changes.entry_types"`
-	ChangeTypes []int `filter:"ledger_entry_changes.change_types"`
+	ChangeTypes []int
+	EntryTypes  []int
 }
 
 type TransactionIncludes struct {
-	LedgerEntryChanges bool `include:"ledger_entry_changes"`
+	LedgerEntryChanges bool
 }
 
 type TransactionParams struct {
@@ -28,14 +30,35 @@ type TransactionParams struct {
 	PageParams page.Params
 }
 
-func (p TransactionParams) Filter() interface{} {
-	return p.Filters
+func (p TransactionParams) Prepare() url.Values {
+	result := url.Values{}
+	p.Filters.prepare(&result)
+	p.PageParams.Prepare(&result)
+	p.Includes.prepare(&result)
+	return result
 }
 
-func (p TransactionParams) Include() interface{} {
-	return p.Includes
+
+func (p TransactionFilters) prepare(result *url.Values) {
+	if p.EntryTypes != nil {
+		types := make([]string, len(p.EntryTypes))
+		for _, et := range p.EntryTypes{
+			types = append(types, fmt.Sprintf("%d",et))
+		}
+		result.Add("filter[ledger_entry_changes.entry_types]", strings.Join(types, ","))
+	}
+
+	if p.ChangeTypes != nil {
+		types := make([]string, len(p.ChangeTypes))
+		for _, ct := range p.ChangeTypes{
+			types = append(types, fmt.Sprintf("%d", ct))
+		}
+		result.Add("filter[ledger_entry_changes.change_types]", strings.Join(types, ","))
+	}
 }
 
-func (p TransactionParams) Page() interface{} {
-	return p.PageParams
+func (p TransactionIncludes) prepare(result *url.Values) {
+	if p.LedgerEntryChanges {
+		result.Add("include", "ledger_entry_changes")
+	}
 }

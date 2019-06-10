@@ -20,7 +20,6 @@ type AssetPager interface {
 }
 
 type AssetGetter interface {
-	AssetPager
 	SetFilters(filters query.AssetFilters)
 	SetIncludes(includes query.AssetIncludes)
 	SetPageParams(pageParams page.Params)
@@ -34,52 +33,57 @@ type AssetGetter interface {
 	List() (*regources.AssetListResponse, error)
 }
 
-type defaultAssetGetter struct {
+type AssetHandler interface {
+	AssetGetter
+	AssetPager
+}
+
+type defaultAssetHandler struct {
 	base   Getter
 	params query.AssetParams
 
 	currentPageLinks *regources.Links
 }
 
-func NewDefaultAssetGetter(c *client.Client) *defaultAssetGetter {
-	return &defaultAssetGetter{
+func NewDefaultAssetHandler(c *client.Client) *defaultAssetHandler {
+	return &defaultAssetHandler{
 		base: New(c),
 	}
 }
 
-func (g *defaultAssetGetter) SetFilters(filters query.AssetFilters) {
+func (g *defaultAssetHandler) SetFilters(filters query.AssetFilters) {
 	g.params.Filters = filters
 }
 
-func (g *defaultAssetGetter) SetIncludes(includes query.AssetIncludes) {
+func (g *defaultAssetHandler) SetIncludes(includes query.AssetIncludes) {
 	g.params.Includes = includes
 }
 
-func (g *defaultAssetGetter) SetPageParams(pageParams page.Params) {
+func (g *defaultAssetHandler) SetPageParams(pageParams page.Params) {
 	g.params.PageParams = pageParams
 }
 
-func (g *defaultAssetGetter) SetParams(params query.AssetParams) {
+func (g *defaultAssetHandler) SetParams(params query.AssetParams) {
 	g.params = params
 }
 
-func (g *defaultAssetGetter) Params() query.AssetParams {
+func (g *defaultAssetHandler) Params() query.AssetParams {
 	return g.params
 }
 
-func (g *defaultAssetGetter) Filter() query.AssetFilters {
+func (g *defaultAssetHandler) Filter() query.AssetFilters {
 	return g.params.Filters
 }
 
-func (g *defaultAssetGetter) Include() query.AssetIncludes {
+func (g *defaultAssetHandler) Include() query.AssetIncludes {
 	return g.params.Includes
 }
 
-func (g *defaultAssetGetter) Page() page.Params {
+func (g *defaultAssetHandler) Page() page.Params {
 	return g.params.PageParams
 }
 
-func (g *defaultAssetGetter) ByID(ID string) (*regources.AssetResponse, error) {
+func (g *defaultAssetHandler) ByID(ID string) (*regources.AssetResponse, error) {
 	result := &regources.AssetResponse{}
 	err := g.base.GetPage(query.AssetByID(ID), g.params, result)
 	if err != nil {
@@ -87,11 +91,10 @@ func (g *defaultAssetGetter) ByID(ID string) (*regources.AssetResponse, error) {
 			"id": ID,
 		})
 	}
-
 	return result, nil
 }
 
-func (g *defaultAssetGetter) List() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) List() (*regources.AssetListResponse, error) {
 	result := &regources.AssetListResponse{}
 	err := g.base.GetPage(query.AssetList(), g.params, result)
 	if err != nil {
@@ -99,13 +102,16 @@ func (g *defaultAssetGetter) List() (*regources.AssetListResponse, error) {
 			"query_params": g.params,
 		})
 	}
-
+	g.currentPageLinks = result.Links
 	return result, nil
 }
 
-func (g *defaultAssetGetter) Next() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) Next() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.Next == "" {
+		return nil, nil
 	}
 	result := &regources.AssetListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
@@ -118,10 +124,14 @@ func (g *defaultAssetGetter) Next() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultAssetGetter) Prev() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) Prev() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
+	if g.currentPageLinks.Prev == "" {
+		return nil, nil
+	}
+
 	result := &regources.AssetListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
 	if err != nil {
@@ -133,9 +143,12 @@ func (g *defaultAssetGetter) Prev() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultAssetGetter) Self() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) Self() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.Self == "" {
+		return nil, nil
 	}
 	result := &regources.AssetListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Self, result)

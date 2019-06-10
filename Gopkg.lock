@@ -339,14 +339,14 @@
 
 [[projects]]
   branch = "feature/v3"
-  digest = "1:4f00e254b7cd087f8e383548f3ddf63de33193dba3a8d1de91c07aa8bc911a83"
+  digest = "1:06c12c1b554666cff13f63e87d9fb66ecb6be710bb8216e15ed4aaf7e1b7d6c5"
   name = "gitlab.com/tokend/addrstate"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0e6dbddf112c9625a9013efcf5e924211fc967ec"
+  revision = "e95e8632257191e58d92f54767cf8ab1b290f1f2"
 
 [[projects]]
-  digest = "1:349cca72722ac6f316df57dfc314f281d87dfe293a38c8fc1141995924c3da87"
+  digest = "1:ef57710b77b20159f7c72d759355bb0f97d4552c9c2320c404308d31d1d67f2a"
   name = "gitlab.com/tokend/go"
   packages = [
     "amount",
@@ -362,8 +362,8 @@
     "xdrbuild/internal",
   ]
   pruneopts = "UT"
-  revision = "8309f76450df3636b6efd54ca4b080eca2e80feb"
-  version = "v3.7.0"
+  revision = "4912d9d0be3775e861c0f095ece478d0a514a8b9"
+  version = "v3.8.0"
 
 [[projects]]
   digest = "1:0cc74bfe93bf9807f21bd164dcdbe6fe8415f00803ac06fd455d8088fdffc0bf"
