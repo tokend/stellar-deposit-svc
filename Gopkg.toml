@@ -39,10 +39,6 @@
   version = "1.0.3"
 
 [[constraint]]
-  name = "github.com/urfave/cli"
-  version = "1.20.0"
-
-[[constraint]]
   name = "gitlab.com/distributed_lab/kit"
   version = "0.7.0"
 
@@ -53,6 +49,7 @@
 [[override]]
   branch = "master"
   name = "golang.org/x/crypto"
+
 [[constraint]]
   name = "gitlab.com/tokend/go"
   version = "3.7.0"
@@ -70,14 +67,5 @@
   version = "1.2.0"
 
 [[constraint]]
-  name = "github.com/google/jsonapi"
-  version = "1.0.0"
-
-[[constraint]]
   name = "gitlab.com/tokend/addrstate"
   branch = "feature/v3"
-
-
-[[constraint]]
-  name = "github.com/cheekybits/genny"
-  version = "1.0.0"

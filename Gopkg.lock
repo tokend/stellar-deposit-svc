@@ -77,14 +77,6 @@
   version = "v3.5.0"
 
 [[projects]]
-  digest = "1:a712b5079fa7fd942a077341757265836063980331c0186360d463d61ffa2223"
-  name = "github.com/google/jsonapi"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "46d3ced0434461be12e555852e2f1a9ed382e139"
-  version = "1.0.0"
-
-[[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
   name = "github.com/hashicorp/hcl"
   packages = [
@@ -442,7 +434,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/go-ozzo/ozzo-validation",
-    "github.com/google/jsonapi",
     "github.com/stellar/go/clients/horizonclient",
     "github.com/stellar/go/protocols/horizon",
     "github.com/stellar/go/protocols/horizon/operations",
@@ -456,8 +447,10 @@
     "gitlab.com/distributed_lab/running",
     "gitlab.com/tokend/addrstate",
     "gitlab.com/tokend/go/amount",
+    "gitlab.com/tokend/go/hash",
     "gitlab.com/tokend/go/keypair",
     "gitlab.com/tokend/go/signcontrol",
+    "gitlab.com/tokend/go/xdr",
     "gitlab.com/tokend/go/xdrbuild",
     "gitlab.com/tokend/keypair",
     "gitlab.com/tokend/keypair/figurekeypair",
