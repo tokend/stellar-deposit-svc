@@ -95,12 +95,7 @@ func (s *submitter) Submit(ctx context.Context, envelope string, waitIngest bool
 		if err := json.Unmarshal(response, &failureResp); err != nil {
 			panic(errors.Wrap(err, "failed to unmarshal horizon response"))
 		}
-		return nil, TxFailure{
-			error:                 errors.New(failureResp.Errors[0].Detail),
-			ResultXDR:             failureResp.Errors[0].Meta.ResultXDR,
-			OperationResultCodes:  failureResp.Errors[0].Meta.ResultCodes.OperationCodes,
-			TransactionResultCode: failureResp.Errors[0].Meta.ResultCodes.TransactionCode,
-		}
+		return nil, newTxFailure(failureResp)
 	case http.StatusInternalServerError: // internal error
 		return nil, ErrSubmitInternal
 	default:
@@ -110,4 +105,18 @@ func (s *submitter) Submit(ctx context.Context, envelope string, waitIngest bool
 
 func isStatusCodeSuccessful(code int) bool {
 	return code >= 200 && code < 300
+}
+
+func newTxFailure(response txFailureResponse) TxFailure {
+	failure := TxFailure{
+		error: errors.New(response.Errors[0].Detail),
+	}
+
+	if response.Errors[0].Meta != nil {
+		failure.ResultXDR = response.Errors[0].Meta.ResultXDR
+		failure.OperationResultCodes = response.Errors[0].Meta.ResultCodes.OperationCodes
+		failure.TransactionResultCode = response.Errors[0].Meta.ResultCodes.TransactionCode
+	}
+
+	return failure
 }
