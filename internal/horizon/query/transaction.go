@@ -24,6 +24,12 @@ type TransactionIncludes struct {
 	LedgerEntryChanges bool
 }
 
+func (p TransactionIncludes) Prepare() url.Values {
+	result := url.Values{}
+	p.prepare(&result)
+	return result
+}
+
 type TransactionParams struct {
 	Includes   TransactionIncludes
 	Filters    TransactionFilters
@@ -38,19 +44,18 @@ func (p TransactionParams) Prepare() url.Values {
 	return result
 }
 
-
 func (p TransactionFilters) prepare(result *url.Values) {
 	if p.EntryTypes != nil {
 		types := make([]string, len(p.EntryTypes))
-		for _, et := range p.EntryTypes{
-			types = append(types, fmt.Sprintf("%d",et))
+		for _, et := range p.EntryTypes {
+			types = append(types, fmt.Sprintf("%d", et))
 		}
 		result.Add("filter[ledger_entry_changes.entry_types]", strings.Join(types, ","))
 	}
 
 	if p.ChangeTypes != nil {
 		types := make([]string, len(p.ChangeTypes))
-		for _, ct := range p.ChangeTypes{
+		for _, ct := range p.ChangeTypes {
 			types = append(types, fmt.Sprintf("%d", ct))
 		}
 		result.Add("filter[ledger_entry_changes.change_types]", strings.Join(types, ","))

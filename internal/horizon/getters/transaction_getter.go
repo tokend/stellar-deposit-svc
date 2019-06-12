@@ -86,7 +86,7 @@ func (g *defaultResourceHandler) Page() page.Params {
 
 func (g *defaultResourceHandler) ByID(ID string) (*regources.TransactionResponse, error) {
 	result := &regources.TransactionResponse{}
-	err := g.base.GetPage(query.ResourceByID(ID), g.params, result)
+	err := g.base.GetPage(query.ResourceByID(ID), g.params.Includes, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,

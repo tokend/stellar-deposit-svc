@@ -15,6 +15,12 @@ type AssetIncludes struct {
 	Owner bool
 }
 
+func (p AssetIncludes) Prepare() url.Values {
+	result := url.Values{}
+	p.prepare(&result)
+	return result
+}
+
 type AssetParams struct {
 	Includes   AssetIncludes
 	Filters    AssetFilters
