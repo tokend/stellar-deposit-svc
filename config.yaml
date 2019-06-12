@@ -6,6 +6,7 @@ payment:
 
 deposit:
   asset_owner: "G_SOME_VALID_ADDRESS"
+  asset_issuer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
 
 horizon:
   endpoint:
