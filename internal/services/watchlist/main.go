@@ -22,12 +22,17 @@ type StellarDetails struct {
 }
 
 func (s StellarDetails) Validate() error {
-	return ValidateStruct(&s,
-		Field(&s.StellarDeposit, Required),
-		Field(&s.Code, Required, Length(1, 12)),
-		Field(&s.AssetType, Required),
-		Field(&s.ExternalSystemType, Required, Min(1)),
-	)
+	errs := Errors{
+		"ExternalSystemType": Validate(&s.ExternalSystemType, Required, Min(1)),
+		"AssetType":          Validate(&s.AssetType, Required),
+		"StellarDeposit":     Validate(&s.StellarDeposit, Required),
+	}
+
+	if s.AssetType != "native" {
+		errs["Code"] = Validate(&s.Code, Required, Length(1, 12))
+	}
+
+	return errs.Filter()
 }
 
 type Details struct {
@@ -59,7 +64,7 @@ func New(opts Opts) *Service {
 		owner:    opts.AssetOwner,
 		log:      opts.Log.WithField("service", "watchlist"),
 		pipe:     ch,
-		timeout: opts.Timeout,
+		timeout:  opts.Timeout,
 	}
 }
 
