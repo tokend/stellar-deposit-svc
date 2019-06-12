@@ -13,79 +13,80 @@ import (
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-type TransactionPager interface {
+type ResourcePager interface {
 	Next() (*regources.TransactionListResponse, error)
 	Prev() (*regources.TransactionListResponse, error)
 	Self() (*regources.TransactionListResponse, error)
+	First() (*regources.TransactionListResponse, error)
 }
 
-type TransactionGetter interface {
-	SetFilters(filters query.TransactionFilters)
-	SetIncludes(includes query.TransactionIncludes)
+type ResourceGetter interface {
+	SetFilters(filters query.ResourceFilters)
+	SetIncludes(includes query.ResourceIncludes)
 	SetPageParams(pageParams page.Params)
-	SetParams(params query.TransactionParams)
+	SetParams(params query.ResourceParams)
 
-	Filter() query.TransactionFilters
-	Include() query.TransactionIncludes
+	Filter() query.ResourceFilters
+	Include() query.ResourceIncludes
 	Page() page.Params
 
 	ByID(ID string) (*regources.TransactionResponse, error)
 	List() (*regources.TransactionListResponse, error)
 }
 
-type TransactionHandler interface {
-	TransactionGetter
-	TransactionPager
+type ResourceHandler interface {
+	ResourceGetter
+	ResourcePager
 }
 
-type defaultTransactionHandler struct {
+type defaultResourceHandler struct {
 	base   Getter
-	params query.TransactionParams
+	params query.ResourceParams
 
 	currentPageLinks *regources.Links
 }
 
-func NewDefaultTransactionHandler(c *client.Client) *defaultTransactionHandler {
-	return &defaultTransactionHandler{
+func NewDefaultResourceHandler(c *client.Client) *defaultResourceHandler {
+	return &defaultResourceHandler{
 		base: New(c),
 	}
 }
 
-func (g *defaultTransactionHandler) SetFilters(filters query.TransactionFilters) {
+func (g *defaultResourceHandler) SetFilters(filters query.ResourceFilters) {
 	g.params.Filters = filters
 }
 
-func (g *defaultTransactionHandler) SetIncludes(includes query.TransactionIncludes) {
+func (g *defaultResourceHandler) SetIncludes(includes query.ResourceIncludes) {
 	g.params.Includes = includes
 }
 
-func (g *defaultTransactionHandler) SetPageParams(pageParams page.Params) {
+func (g *defaultResourceHandler) SetPageParams(pageParams page.Params) {
 	g.params.PageParams = pageParams
 }
 
-func (g *defaultTransactionHandler) SetParams(params query.TransactionParams) {
+func (g *defaultResourceHandler) SetParams(params query.ResourceParams) {
 	g.params = params
 }
 
-func (g *defaultTransactionHandler) Params() query.TransactionParams {
+func (g *defaultResourceHandler) Params() query.ResourceParams {
 	return g.params
 }
 
-func (g *defaultTransactionHandler) Filter() query.TransactionFilters {
+func (g *defaultResourceHandler) Filter() query.ResourceFilters {
 	return g.params.Filters
 }
 
-func (g *defaultTransactionHandler) Include() query.TransactionIncludes {
+func (g *defaultResourceHandler) Include() query.ResourceIncludes {
 	return g.params.Includes
 }
 
-func (g *defaultTransactionHandler) Page() page.Params {
+func (g *defaultResourceHandler) Page() page.Params {
 	return g.params.PageParams
 }
 
-func (g *defaultTransactionHandler) ByID(ID string) (*regources.TransactionResponse, error) {
+func (g *defaultResourceHandler) ByID(ID string) (*regources.TransactionResponse, error) {
 	result := &regources.TransactionResponse{}
-	err := g.base.GetPage(query.TransactionByID(ID), g.params, result)
+	err := g.base.GetPage(query.ResourceByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -94,9 +95,9 @@ func (g *defaultTransactionHandler) ByID(ID string) (*regources.TransactionRespo
 	return result, nil
 }
 
-func (g *defaultTransactionHandler) List() (*regources.TransactionListResponse, error) {
+func (g *defaultResourceHandler) List() (*regources.TransactionListResponse, error) {
 	result := &regources.TransactionListResponse{}
-	err := g.base.GetPage(query.TransactionList(), g.params, result)
+	err := g.base.GetPage(query.ResourceList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
 			"query_params": g.params,
@@ -106,12 +107,14 @@ func (g *defaultTransactionHandler) List() (*regources.TransactionListResponse, 
 	return result, nil
 }
 
-func (g *defaultTransactionHandler) Next() (*regources.TransactionListResponse, error) {
+func (g *defaultResourceHandler) Next() (*regources.TransactionListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	if g.currentPageLinks.Next == "" {
-		return nil, nil
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "next",
+		})
 	}
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
@@ -124,12 +127,14 @@ func (g *defaultTransactionHandler) Next() (*regources.TransactionListResponse, 
 	return result, nil
 }
 
-func (g *defaultTransactionHandler) Prev() (*regources.TransactionListResponse, error) {
+func (g *defaultResourceHandler) Prev() (*regources.TransactionListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	if g.currentPageLinks.Prev == "" {
-		return nil, nil
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "prev",
+		})
 	}
 
 	result := &regources.TransactionListResponse{}
@@ -143,12 +148,34 @@ func (g *defaultTransactionHandler) Prev() (*regources.TransactionListResponse, 
 	return result, nil
 }
 
-func (g *defaultTransactionHandler) Self() (*regources.TransactionListResponse, error) {
+func (g *defaultResourceHandler) Self() (*regources.TransactionListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	if g.currentPageLinks.Self == "" {
-		return nil, nil
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "self",
+		})
+	}
+	result := &regources.TransactionListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultResourceHandler) First() (*regources.TransactionListResponse, error) {
+	if g.currentPageLinks == nil {
+		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.First == "" {
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "first",
+		})
 	}
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Self, result)

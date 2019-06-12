@@ -10,7 +10,6 @@ import (
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/distributed_lab/running"
 	"gitlab.com/tokend/regources/generated"
-	"sync"
 	"time"
 )
 
@@ -44,17 +43,13 @@ type Service struct {
 	streamer getters.AssetHandler
 	log      *logan.Entry
 	owner    string
-	timeout  time.Duration
 	pipe     chan Details
-	wg       *sync.WaitGroup
 }
 
 type Opts struct {
 	Streamer   getters.AssetHandler
 	Log        *logan.Entry
 	AssetOwner string
-	Timeout    time.Duration
-	Wg         *sync.WaitGroup
 }
 
 func New(opts Opts) *Service {
@@ -64,7 +59,6 @@ func New(opts Opts) *Service {
 		owner:    opts.AssetOwner,
 		log:      opts.Log.WithField("service", "watchlist"),
 		pipe:     ch,
-		timeout:  opts.Timeout,
 	}
 }
 
@@ -74,7 +68,6 @@ func (s *Service) GetChan() <-chan Details {
 
 func (s *Service) Run(ctx context.Context) {
 	defer close(s.pipe)
-	defer s.wg.Done()
 
 	running.WithBackOff(ctx, s.log, "asset-watcher", func(ctx context.Context) error {
 		assetsToWatch, err := s.getWatchList()
@@ -85,7 +78,7 @@ func (s *Service) Run(ctx context.Context) {
 			s.pipe <- asset
 		}
 		return nil
-	}, s.timeout, 20*time.Second, 5*time.Minute)
+	}, 5*time.Minute, 5*time.Minute, time.Hour)
 }
 
 func (s *Service) getWatchList() ([]Details, error) {

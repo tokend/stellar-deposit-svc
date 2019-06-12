@@ -9,7 +9,6 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/distributed_lab/running"
-	"sync"
 	"time"
 )
 
@@ -25,9 +24,7 @@ type Service struct {
 	log          *logan.Entry
 	watchAddress string
 	client       horizonclient.ClientInterface
-	delay        time.Duration
 	ch           chan Details
-	wg           *sync.WaitGroup
 }
 
 type Opts struct {
@@ -35,8 +32,6 @@ type Opts struct {
 	Log          *logan.Entry
 	WatchAddress string
 	Client       horizonclient.ClientInterface
-	Delay        time.Duration
-	WG           *sync.WaitGroup
 }
 
 func NewService(opts Opts) *Service {
@@ -50,10 +45,8 @@ func NewService(opts Opts) *Service {
 		assetType:    horizonclient.AssetType(opts.AssetDetails.StellarDetails.AssetType),
 		assetCode:    opts.AssetDetails.StellarDetails.Code,
 		watchAddress: opts.WatchAddress,
-		delay:        opts.Delay,
 		client:       opts.Client,
 		ch:           ch,
-		wg:           opts.WG,
 	}
 }
 
@@ -62,7 +55,6 @@ func (s *Service) GetChan() <-chan Details {
 }
 
 func (s *Service) Run(ctx context.Context) {
-	defer s.wg.Done()
 	request := horizonclient.OperationRequest{
 		ForAccount: s.watchAddress,
 		Order:      horizonclient.OrderAsc,
@@ -102,7 +94,7 @@ func (s *Service) Run(ctx context.Context) {
 		}
 
 		return nil
-	}, s.delay, s.delay, 5*time.Minute)
+	}, 30*time.Second, 30*time.Second, time.Hour)
 }
 
 func paymentDetails(record operations.Payment, tx horizon.Transaction) Details {

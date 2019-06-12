@@ -13,79 +13,80 @@ import (
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-type AssetPager interface {
+type ResourcePager interface {
 	Next() (*regources.AssetListResponse, error)
 	Prev() (*regources.AssetListResponse, error)
 	Self() (*regources.AssetListResponse, error)
+	First() (*regources.AssetListResponse, error)
 }
 
-type AssetGetter interface {
-	SetFilters(filters query.AssetFilters)
-	SetIncludes(includes query.AssetIncludes)
+type ResourceGetter interface {
+	SetFilters(filters query.ResourceFilters)
+	SetIncludes(includes query.ResourceIncludes)
 	SetPageParams(pageParams page.Params)
-	SetParams(params query.AssetParams)
+	SetParams(params query.ResourceParams)
 
-	Filter() query.AssetFilters
-	Include() query.AssetIncludes
+	Filter() query.ResourceFilters
+	Include() query.ResourceIncludes
 	Page() page.Params
 
 	ByID(ID string) (*regources.AssetResponse, error)
 	List() (*regources.AssetListResponse, error)
 }
 
-type AssetHandler interface {
-	AssetGetter
-	AssetPager
+type ResourceHandler interface {
+	ResourceGetter
+	ResourcePager
 }
 
-type defaultAssetHandler struct {
+type defaultResourceHandler struct {
 	base   Getter
-	params query.AssetParams
+	params query.ResourceParams
 
 	currentPageLinks *regources.Links
 }
 
-func NewDefaultAssetHandler(c *client.Client) *defaultAssetHandler {
-	return &defaultAssetHandler{
+func NewDefaultResourceHandler(c *client.Client) *defaultResourceHandler {
+	return &defaultResourceHandler{
 		base: New(c),
 	}
 }
 
-func (g *defaultAssetHandler) SetFilters(filters query.AssetFilters) {
+func (g *defaultResourceHandler) SetFilters(filters query.ResourceFilters) {
 	g.params.Filters = filters
 }
 
-func (g *defaultAssetHandler) SetIncludes(includes query.AssetIncludes) {
+func (g *defaultResourceHandler) SetIncludes(includes query.ResourceIncludes) {
 	g.params.Includes = includes
 }
 
-func (g *defaultAssetHandler) SetPageParams(pageParams page.Params) {
+func (g *defaultResourceHandler) SetPageParams(pageParams page.Params) {
 	g.params.PageParams = pageParams
 }
 
-func (g *defaultAssetHandler) SetParams(params query.AssetParams) {
+func (g *defaultResourceHandler) SetParams(params query.ResourceParams) {
 	g.params = params
 }
 
-func (g *defaultAssetHandler) Params() query.AssetParams {
+func (g *defaultResourceHandler) Params() query.ResourceParams {
 	return g.params
 }
 
-func (g *defaultAssetHandler) Filter() query.AssetFilters {
+func (g *defaultResourceHandler) Filter() query.ResourceFilters {
 	return g.params.Filters
 }
 
-func (g *defaultAssetHandler) Include() query.AssetIncludes {
+func (g *defaultResourceHandler) Include() query.ResourceIncludes {
 	return g.params.Includes
 }
 
-func (g *defaultAssetHandler) Page() page.Params {
+func (g *defaultResourceHandler) Page() page.Params {
 	return g.params.PageParams
 }
 
-func (g *defaultAssetHandler) ByID(ID string) (*regources.AssetResponse, error) {
+func (g *defaultResourceHandler) ByID(ID string) (*regources.AssetResponse, error) {
 	result := &regources.AssetResponse{}
-	err := g.base.GetPage(query.AssetByID(ID), g.params, result)
+	err := g.base.GetPage(query.ResourceByID(ID), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -94,9 +95,9 @@ func (g *defaultAssetHandler) ByID(ID string) (*regources.AssetResponse, error) 
 	return result, nil
 }
 
-func (g *defaultAssetHandler) List() (*regources.AssetListResponse, error) {
+func (g *defaultResourceHandler) List() (*regources.AssetListResponse, error) {
 	result := &regources.AssetListResponse{}
-	err := g.base.GetPage(query.AssetList(), g.params, result)
+	err := g.base.GetPage(query.ResourceList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
 			"query_params": g.params,
@@ -106,12 +107,14 @@ func (g *defaultAssetHandler) List() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultAssetHandler) Next() (*regources.AssetListResponse, error) {
+func (g *defaultResourceHandler) Next() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	if g.currentPageLinks.Next == "" {
-		return nil, nil
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "next",
+		})
 	}
 	result := &regources.AssetListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Next, result)
@@ -124,12 +127,14 @@ func (g *defaultAssetHandler) Next() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultAssetHandler) Prev() (*regources.AssetListResponse, error) {
+func (g *defaultResourceHandler) Prev() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	if g.currentPageLinks.Prev == "" {
-		return nil, nil
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "prev",
+		})
 	}
 
 	result := &regources.AssetListResponse{}
@@ -143,12 +148,34 @@ func (g *defaultAssetHandler) Prev() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultAssetHandler) Self() (*regources.AssetListResponse, error) {
+func (g *defaultResourceHandler) Self() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
 	if g.currentPageLinks.Self == "" {
-		return nil, nil
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "self",
+		})
+	}
+	result := &regources.AssetListResponse{}
+	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+			"link": g.currentPageLinks.Next,
+		})
+	}
+
+	return result, nil
+}
+
+func (g *defaultResourceHandler) First() (*regources.AssetListResponse, error) {
+	if g.currentPageLinks == nil {
+		return nil, errors.New("Empty links")
+	}
+	if g.currentPageLinks.First == "" {
+		return nil, errors.From(errors.New("No link to page"), logan.F{
+			"page": "first",
+		})
 	}
 	result := &regources.AssetListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Self, result)

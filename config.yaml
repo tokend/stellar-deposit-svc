@@ -1,11 +1,11 @@
 stellar:
-  target_address: "G_STELLAR_DEPOSIT_ADDRESS"
-  delay: 10s # how often to check for new payments
   is_testnet: true # set true for stellar testnet
+
+payment:
+  target_address: "G_STELLAR_DEPOSIT_ADDRESS"
 
 deposit:
   asset_owner: "G_SOME_VALID_ADDRESS"
-  delay: 10s # how often to check for new assets depositable thru stellar
 
 horizon:
   endpoint:
@@ -13,3 +13,4 @@ horizon:
 
 log:
   level: info
+  disable_sentry: true

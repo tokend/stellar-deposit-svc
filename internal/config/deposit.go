@@ -6,13 +6,11 @@ import (
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	"gitlab.com/tokend/keypair"
 	"gitlab.com/tokend/keypair/figurekeypair"
-	"time"
 )
 
 type DepositConfig struct {
 	AssetOwner keypair.Address `fig:"asset_owner"`
 	AssetIssuer keypair.Full `fig:"asset_issuer"`
-	Delay time.Duration `fig:"delay"`
 }
 func (c *config) DepositConfig() DepositConfig {
 	c.once.Do(func() interface{} {

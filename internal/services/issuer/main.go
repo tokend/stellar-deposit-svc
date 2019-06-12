@@ -16,7 +16,6 @@ import (
 	"gitlab.com/tokend/go/xdrbuild"
 	"gitlab.com/tokend/keypair"
 	regources "gitlab.com/tokend/regources/generated"
-	"sync"
 	"time"
 )
 
@@ -52,7 +51,6 @@ type Service struct {
 	log             *logan.Entry
 	addressProvider addressProvider
 	ch              <-chan payment.Details
-	wg              *sync.WaitGroup
 }
 
 type Opts struct {
@@ -62,7 +60,6 @@ type Opts struct {
 	AssetDetails watchlist.Details
 	Signer       keypair.Full
 	Log          *logan.Entry
-	WG           *sync.WaitGroup
 	Ch           <-chan payment.Details
 }
 
@@ -79,13 +76,10 @@ func New(opts Opts) *Service {
 		}),
 		owner: keypair.MustParseAddress(opts.AssetDetails.Relationships.Owner.Data.ID),
 		ch:    opts.Ch,
-		wg:    opts.WG,
 	}
 }
 
 func (s *Service) Run(ctx context.Context) {
-	defer s.wg.Done()
-
 	s.addressProvider = addrstate.New(
 		ctx,
 		s.log,
