@@ -116,12 +116,21 @@ func (s *Service) Run(ctx context.Context) {
 func (s *Service) processPayment(ctx context.Context, payment payment.Details) error {
 	address := s.addressProvider.ExternalAccountAt(ctx, payment.LedgerCloseTime, s.asset.ExternalSystemType, payment.TxMemo)
 	if address == nil {
-		//todo
+		s.log.WithFields(logan.F{
+			"payment_id": payment.ID,
+			"tx_hash":    payment.TxHash,
+			"tx_memo":    payment.TxMemo,
+		}).Warn("Unable to find valid address to issue tokens to")
 		return nil
 	}
 	balance := s.addressProvider.Balance(ctx, *address, s.asset.ID)
 	if balance == nil {
-		//todo
+		s.log.WithFields(logan.F{
+			"payment_id": payment.ID,
+			"tx_hash":    payment.TxHash,
+			"tx_memo":    payment.TxMemo,
+			"address":    address,
+		}).Warn("Unable to find valid balance to issue tokens to")
 		return nil
 	}
 
