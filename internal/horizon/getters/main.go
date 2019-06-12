@@ -10,8 +10,8 @@ import (
 	"gitlab.com/distributed_lab/logan/v3/errors"
 )
 
-//go:generate genny -in=getter.tmpl -out=asset_getter.go gen "Template=Asset"
-//go:generate genny -in=getter.tmpl -out=transaction_getter.go gen "Template=Transaction"
+//go:generate genny -in=getter.tmpl -out=asset_getter.go gen "Template=Asset Resource=Asset"
+//go:generate genny -in=getter.tmpl -out=transaction_getter.go gen "Template=Transaction Resource=Transaction"
 
 type Getter interface {
 	GetPage(endpoint string, params query.Params, result interface{}) error

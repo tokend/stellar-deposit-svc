@@ -13,80 +13,80 @@ import (
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-type ResourcePager interface {
+type AssetPager interface {
 	Next() (*regources.AssetListResponse, error)
 	Prev() (*regources.AssetListResponse, error)
 	Self() (*regources.AssetListResponse, error)
 	First() (*regources.AssetListResponse, error)
 }
 
-type ResourceGetter interface {
-	SetFilters(filters query.ResourceFilters)
-	SetIncludes(includes query.ResourceIncludes)
+type AssetGetter interface {
+	SetFilters(filters query.AssetFilters)
+	SetIncludes(includes query.AssetIncludes)
 	SetPageParams(pageParams page.Params)
-	SetParams(params query.ResourceParams)
+	SetParams(params query.AssetParams)
 
-	Filter() query.ResourceFilters
-	Include() query.ResourceIncludes
+	Filter() query.AssetFilters
+	Include() query.AssetIncludes
 	Page() page.Params
 
 	ByID(ID string) (*regources.AssetResponse, error)
 	List() (*regources.AssetListResponse, error)
 }
 
-type ResourceHandler interface {
-	ResourceGetter
-	ResourcePager
+type AssetHandler interface {
+	AssetGetter
+	AssetPager
 }
 
-type defaultResourceHandler struct {
+type defaultAssetHandler struct {
 	base   Getter
-	params query.ResourceParams
+	params query.AssetParams
 
 	currentPageLinks *regources.Links
 }
 
-func NewDefaultResourceHandler(c *client.Client) *defaultResourceHandler {
-	return &defaultResourceHandler{
+func NewDefaultAssetHandler(c *client.Client) *defaultAssetHandler {
+	return &defaultAssetHandler{
 		base: New(c),
 	}
 }
 
-func (g *defaultResourceHandler) SetFilters(filters query.ResourceFilters) {
+func (g *defaultAssetHandler) SetFilters(filters query.AssetFilters) {
 	g.params.Filters = filters
 }
 
-func (g *defaultResourceHandler) SetIncludes(includes query.ResourceIncludes) {
+func (g *defaultAssetHandler) SetIncludes(includes query.AssetIncludes) {
 	g.params.Includes = includes
 }
 
-func (g *defaultResourceHandler) SetPageParams(pageParams page.Params) {
+func (g *defaultAssetHandler) SetPageParams(pageParams page.Params) {
 	g.params.PageParams = pageParams
 }
 
-func (g *defaultResourceHandler) SetParams(params query.ResourceParams) {
+func (g *defaultAssetHandler) SetParams(params query.AssetParams) {
 	g.params = params
 }
 
-func (g *defaultResourceHandler) Params() query.ResourceParams {
+func (g *defaultAssetHandler) Params() query.AssetParams {
 	return g.params
 }
 
-func (g *defaultResourceHandler) Filter() query.ResourceFilters {
+func (g *defaultAssetHandler) Filter() query.AssetFilters {
 	return g.params.Filters
 }
 
-func (g *defaultResourceHandler) Include() query.ResourceIncludes {
+func (g *defaultAssetHandler) Include() query.AssetIncludes {
 	return g.params.Includes
 }
 
-func (g *defaultResourceHandler) Page() page.Params {
+func (g *defaultAssetHandler) Page() page.Params {
 	return g.params.PageParams
 }
 
-func (g *defaultResourceHandler) ByID(ID string) (*regources.AssetResponse, error) {
+func (g *defaultAssetHandler) ByID(ID string) (*regources.AssetResponse, error) {
 	result := &regources.AssetResponse{}
-	err := g.base.GetPage(query.ResourceByID(ID), g.params.Includes, result)
+	err := g.base.GetPage(query.AssetByID(ID), g.params.Includes, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get record by id", logan.F{
 			"id": ID,
@@ -95,9 +95,9 @@ func (g *defaultResourceHandler) ByID(ID string) (*regources.AssetResponse, erro
 	return result, nil
 }
 
-func (g *defaultResourceHandler) List() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) List() (*regources.AssetListResponse, error) {
 	result := &regources.AssetListResponse{}
-	err := g.base.GetPage(query.ResourceList(), g.params, result)
+	err := g.base.GetPage(query.AssetList(), g.params, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get records list", logan.F{
 			"query_params": g.params,
@@ -107,7 +107,7 @@ func (g *defaultResourceHandler) List() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultResourceHandler) Next() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) Next() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
@@ -127,7 +127,7 @@ func (g *defaultResourceHandler) Next() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultResourceHandler) Prev() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) Prev() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
@@ -148,7 +148,7 @@ func (g *defaultResourceHandler) Prev() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultResourceHandler) Self() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) Self() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
@@ -168,7 +168,7 @@ func (g *defaultResourceHandler) Self() (*regources.AssetListResponse, error) {
 	return result, nil
 }
 
-func (g *defaultResourceHandler) First() (*regources.AssetListResponse, error) {
+func (g *defaultAssetHandler) First() (*regources.AssetListResponse, error) {
 	if g.currentPageLinks == nil {
 		return nil, errors.New("Empty links")
 	}
