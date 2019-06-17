@@ -82,7 +82,8 @@ func (s *Service) filter(assets []regources.Asset) ([]Details, error) {
 		}
 
 		if err = assetDetails.Validate(); err != nil {
-			return nil, errors.Wrap(err, "incorrect asset details")
+			s.log.WithError(err).Warn("incorrect asset details")
+			continue
 		}
 
 		result = append(result, Details{
