@@ -52,13 +52,12 @@ func (c *connector) State() (*regources.HorizonStateResponse, error) {
 }
 
 func (c *connector) Builder() (*xdrbuild.Builder, error) {
-	//state, err := c.State()
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to get network passphrase and tx expiration period")
-	//}
-	//
-	//return xdrbuild.NewBuilder(state.Data.Attributes.NetworkPassphrase, state.Data.Attributes.TxExpirationPeriod), nil
-	return xdrbuild.NewBuilder("TokenD Developer Network", 601200), nil
+	state, err := c.State()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get network passphrase and tx expiration period")
+	}
+
+	return xdrbuild.NewBuilder(state.Data.Attributes.NetworkPassphrase, state.Data.Attributes.TxExpirationPeriod), nil
 }
 
 func (c *connector) Submitter() (submit.Interface, error) {
