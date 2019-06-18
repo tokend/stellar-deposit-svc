@@ -29,7 +29,7 @@ type addressProvider interface {
 type Service struct {
 	streamer        transactionStreamer
 	txSubmitter     txSubmitter
-	builder         *xdrbuild.Builder
+	builder         xdrbuild.Builder
 	asset           watchlist.Details
 	owner           keypair.Address
 	issuer          keypair.Full
@@ -41,7 +41,7 @@ type Service struct {
 type Opts struct {
 	Streamer     transactionStreamer
 	TxSubmitter  txSubmitter
-	Builder      *xdrbuild.Builder
+	Builder      xdrbuild.Builder
 	AssetDetails watchlist.Details
 	Signer       keypair.Full
 	Log          *logan.Entry

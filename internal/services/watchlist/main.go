@@ -6,10 +6,12 @@ import (
 )
 
 type Service struct {
-	streamer getters.AssetHandler
-	log      *logan.Entry
-	owner    string
-	ch       chan Details
+	streamer  getters.AssetHandler
+	log       *logan.Entry
+	owner     string
+	watchlist map[string]bool
+	toAdd     chan Details
+	toRemove  chan string
 }
 
 type Opts struct {
@@ -19,11 +21,14 @@ type Opts struct {
 }
 
 func New(opts Opts) *Service {
-	ch := make(chan Details)
+	toAdd := make(chan Details)
+	toRemove := make(chan string)
 	return &Service{
-		streamer: opts.Streamer,
-		owner:    opts.AssetOwner,
-		log:      opts.Log.WithField("service", "watchlist"),
-		ch:       ch,
+		streamer:  opts.Streamer,
+		owner:     opts.AssetOwner,
+		log:       opts.Log.WithField("service", "watchlist"),
+		watchlist: make(map[string]bool),
+		toRemove:  toRemove,
+		toAdd:     toAdd,
 	}
 }

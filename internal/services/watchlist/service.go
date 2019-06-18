@@ -11,23 +11,49 @@ import (
 	"time"
 )
 
-func (s *Service) GetChan() <-chan Details {
-	return s.ch
+
+func (s *Service) GetToAdd() <-chan Details {
+	return s.toAdd
+}
+
+func (s *Service) GetToRemove() <-chan string {
+	return s.toRemove
 }
 
 func (s *Service) Run(ctx context.Context) {
-	defer close(s.ch)
+	defer close(s.toAdd)
+	defer close(s.toRemove)
 
-	running.WithBackOff(ctx, s.log, "asset-watcher", func(ctx context.Context) error {
-		assetsToWatch, err := s.getWatchList()
-		if err != nil {
-			return errors.Wrap(err, "failed to get asset watch list")
+	running.WithBackOff(
+		ctx,
+		s.log,
+		"asset-watcher",
+		s.processAllAssetsOnce,
+		10*time.Second,
+		20*time.Second,
+		5*time.Minute,
+	)
+}
+
+func (s *Service) processAllAssetsOnce(ctx context.Context) error {
+	active := make(map[string]bool)
+	assetsToWatch, err := s.getWatchList()
+	if err != nil {
+		return errors.Wrap(err, "failed to get asset watch list")
+	}
+	for _, asset := range assetsToWatch {
+		s.toAdd <- asset
+		active[asset.ID] = true
+	}
+
+	for asset := range s.watchlist {
+		if _, ok := active[asset]; !ok {
+			s.toRemove <- asset
 		}
-		for _, asset := range assetsToWatch {
-			s.ch <- asset
-		}
-		return nil
-	}, 5*time.Minute, 5*time.Minute, time.Hour)
+	}
+
+	s.watchlist = active
+	return nil
 }
 
 func (s *Service) getWatchList() ([]Details, error) {
