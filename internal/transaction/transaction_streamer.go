@@ -48,7 +48,7 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 		running.WithBackOff(ctx, logan.New(), "tx-streamer", func(ctx context.Context) error {
 			if err != nil {
 				errChan <- err
-				return errors.Wrap(err, "error occured while streaming transactions")
+				return errors.Wrap(err, "error occurred while streaming transactions")
 			}
 			if txPage != nil && len(txPage.Data) != 0 {
 				txChan <- *txPage

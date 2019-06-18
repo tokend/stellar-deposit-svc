@@ -6,7 +6,7 @@ import (
 	regources "gitlab.com/tokend/regources/generated"
 )
 
-var assetTypes = []string{
+var assetTypes = []interface{} {
 	string(horizonclient.AssetTypeNative),
 	string(horizonclient.AssetType4),
 	string(horizonclient.AssetType12),
@@ -24,7 +24,7 @@ type AssetDetails struct {
 func (s AssetDetails) Validate() error {
 	errs := Errors{
 		"ExternalSystemType": Validate(&s.ExternalSystemType, Required, Min(1)),
-		"AssetType":          Validate(&s.Stellar.AssetType, Required, In(assetTypes)),
+		"AssetType":          Validate(&s.Stellar.AssetType, Required, In(assetTypes...)),
 		"Deposit":            Validate(&s.Stellar, Required),
 	}
 

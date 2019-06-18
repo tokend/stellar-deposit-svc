@@ -51,7 +51,7 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 			"payment_id": payment.ID,
 			"tx_hash":    payment.TxHash,
 			"tx_memo":    payment.TxMemo,
-		}).Warn("Unable to find valid address to issue tokens to")
+		}).Debug("Unable to find valid address to issue tokens to")
 		return nil
 	}
 	balance := s.addressProvider.Balance(ctx, *address, s.asset.ID)
@@ -61,7 +61,7 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 			"tx_hash":    payment.TxHash,
 			"tx_memo":    payment.TxMemo,
 			"address":    address,
-		}).Warn("Unable to find valid balance to issue tokens to")
+		}).Debug("Unable to find valid balance to issue tokens to")
 		return nil
 	}
 
@@ -92,15 +92,15 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 	if err != nil {
 		return errors.Wrap(err, "failed to craft transaction")
 	}
-	err = submitEnvelope(ctx, envelope, s.txSubmitter)
+	err = s.submitEnvelope(ctx, envelope, payment.GetID())
 	if err != nil {
 		return errors.Wrap(err, "failed to submit issuance tx")
 	}
 	return nil
 }
 
-func submitEnvelope(ctx context.Context, envelope string, submitter txSubmitter) error {
-	_, err := submitter.Submit(ctx, envelope, false)
+func (s *Service) submitEnvelope(ctx context.Context, envelope string, paymentID string) error {
+	_, err := s.txSubmitter.Submit(ctx, envelope, false)
 	if submitFailure, ok := err.(submit.TxFailure); ok {
 		if len(submitFailure.OperationResultCodes) == 1 &&
 			submitFailure.OperationResultCodes[0] == "op_reference_duplication" {
@@ -110,6 +110,6 @@ func submitEnvelope(ctx context.Context, envelope string, submitter txSubmitter)
 	if err != nil {
 		return errors.Wrap(err, "Horizon SubmitResult has error")
 	}
-
+	s.log.WithField("payment_id", paymentID).Info("Successfully processed deposit")
 	return nil
 }
