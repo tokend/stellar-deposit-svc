@@ -24,6 +24,7 @@ func (s *Service) Run(ctx context.Context) {
 	defer close(s.toAdd)
 	defer close(s.toRemove)
 
+	// TODO: It is better to use addrstate here later
 	running.WithBackOff(
 		ctx,
 		s.log,
