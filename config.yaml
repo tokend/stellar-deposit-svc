@@ -1,0 +1,17 @@
+stellar:
+  is_testnet: true # set true for stellar testnet
+
+payment:
+  target_address: "G_STELLAR_DEPOSIT_ADDRESS"
+
+deposit:
+  asset_owner: "G_SOME_VALID_ADDRESS"
+  asset_issuer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+
+horizon:
+  endpoint:
+  signer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+
+log:
+  level: info
+  disable_sentry: true
