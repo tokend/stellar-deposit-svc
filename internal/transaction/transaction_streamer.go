@@ -41,11 +41,24 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 	})
 
 	txPage, err := s.List()
-
+	if err != nil {
+		errChan <- err
+		return txChan, errChan
+	}
+	if txPage == nil {
+		errChan <- errors.New("got nil page")
+		return txChan, errChan
+	}
 	go func() {
 		defer close(txChan)
 		defer close(errChan)
+		txChan <- *txPage
 		running.WithBackOff(ctx, logan.New(), "tx-streamer", func(ctx context.Context) error {
+			if len(txPage.Data) == 0 {
+				txPage, err = s.Self()
+			} else {
+				txPage, err = s.Next()
+			}
 			if err != nil {
 				errChan <- err
 				return errors.Wrap(err, "error occurred while streaming transactions")
@@ -53,11 +66,8 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 			if txPage != nil && len(txPage.Data) != 0 {
 				txChan <- *txPage
 			}
-
-			txPage, err = s.Next()
-
 			return nil
-		}, 10*time.Second, 15*time.Second, 5*time.Minute)
+		}, 15*time.Second, 15*time.Second, 5*time.Minute)
 	}()
 
 	return txChan, errChan

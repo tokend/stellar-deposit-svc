@@ -123,6 +123,7 @@ func (g *defaultTransactionHandler) Next() (*regources.TransactionListResponse, 
 			"link": g.currentPageLinks.Next,
 		})
 	}
+	g.currentPageLinks = result.Links
 
 	return result, nil
 }
@@ -141,9 +142,10 @@ func (g *defaultTransactionHandler) Prev() (*regources.TransactionListResponse, 
 	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get next page", logan.F{
-			"link": g.currentPageLinks.Next,
+			"link": g.currentPageLinks.Prev,
 		})
 	}
+	g.currentPageLinks = result.Links
 
 	return result, nil
 }
@@ -160,10 +162,11 @@ func (g *defaultTransactionHandler) Self() (*regources.TransactionListResponse, 
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get next page", logan.F{
-			"link": g.currentPageLinks.Next,
+		return nil, errors.Wrap(err, "failed to get same page", logan.F{
+			"link": g.currentPageLinks.Self,
 		})
 	}
+	g.currentPageLinks = result.Links
 
 	return result, nil
 }
@@ -178,12 +181,13 @@ func (g *defaultTransactionHandler) First() (*regources.TransactionListResponse,
 		})
 	}
 	result := &regources.TransactionListResponse{}
-	err := g.base.PageFromLink(g.currentPageLinks.Self, result)
+	err := g.base.PageFromLink(g.currentPageLinks.First, result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get next page", logan.F{
-			"link": g.currentPageLinks.Next,
+		return nil, errors.Wrap(err, "failed to get first page", logan.F{
+			"link": g.currentPageLinks.First,
 		})
 	}
+	g.currentPageLinks = result.Links
 
 	return result, nil
 }
