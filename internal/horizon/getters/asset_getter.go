@@ -141,7 +141,7 @@ func (g *defaultAssetHandler) Prev() (*regources.AssetListResponse, error) {
 	result := &regources.AssetListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+		return nil, errors.Wrap(err, "failed to get previous page", logan.F{
 			"link": g.currentPageLinks.Prev,
 		})
 	}

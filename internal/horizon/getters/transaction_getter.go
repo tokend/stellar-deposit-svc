@@ -141,7 +141,7 @@ func (g *defaultTransactionHandler) Prev() (*regources.TransactionListResponse, 
 	result := &regources.TransactionListResponse{}
 	err := g.base.PageFromLink(g.currentPageLinks.Prev, result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get next page", logan.F{
+		return nil, errors.Wrap(err, "failed to get previous page", logan.F{
 			"link": g.currentPageLinks.Prev,
 		})
 	}
