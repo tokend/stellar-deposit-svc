@@ -8,7 +8,7 @@ import (
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/client"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
-	"gitlab.com/distributed_lab/logan"
+	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
 	regources "gitlab.com/tokend/regources/generated"
 )
