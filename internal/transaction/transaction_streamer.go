@@ -63,7 +63,7 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 				errChan <- err
 				return errors.Wrap(err, "error occurred while streaming transactions")
 			}
-			if txPage != nil && len(txPage.Data) != 0 {
+			if txPage != nil {
 				txChan <- *txPage
 			}
 			return nil
