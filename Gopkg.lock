@@ -309,10 +309,9 @@
   version = "v0.7.0"
 
 [[projects]]
-  digest = "1:b27e01e69f4ceec735b0130cc2b7d3785768c736c018faae3dbeb49a0cb41f24"
+  digest = "1:5c74250e2fc48f2fc18808f58640b9b030a76e6eca083486a227441f0803be19"
   name = "gitlab.com/distributed_lab/logan"
   packages = [
-    ".",
     "v3",
     "v3/errors",
     "v3/fields",
@@ -331,11 +330,11 @@
 
 [[projects]]
   branch = "feature/v3"
-  digest = "1:06c12c1b554666cff13f63e87d9fb66ecb6be710bb8216e15ed4aaf7e1b7d6c5"
+  digest = "1:967f3dbde879b5eeb2a6f7abde45d5a116d1f26ed562cf143c26946b1c47b129"
   name = "gitlab.com/tokend/addrstate"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e95e8632257191e58d92f54767cf8ab1b290f1f2"
+  revision = "5db302be50a9cb31336e80af8164511f78d5406c"
 
 [[projects]]
   digest = "1:ef57710b77b20159f7c72d759355bb0f97d4552c9c2320c404308d31d1d67f2a"
@@ -441,7 +440,6 @@
     "gitlab.com/distributed_lab/figure",
     "gitlab.com/distributed_lab/kit/comfig",
     "gitlab.com/distributed_lab/kit/kv",
-    "gitlab.com/distributed_lab/logan",
     "gitlab.com/distributed_lab/logan/v3",
     "gitlab.com/distributed_lab/logan/v3/errors",
     "gitlab.com/distributed_lab/running",
