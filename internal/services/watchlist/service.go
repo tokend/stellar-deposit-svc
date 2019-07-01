@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-
 func (s *Service) GetToAdd() <-chan Details {
 	return s.toAdd
 }
@@ -97,18 +96,13 @@ func (s *Service) filter(assets []regources.Asset) ([]Details, error) {
 	for _, asset := range assets {
 		details := asset.Attributes.Details
 		assetDetails := AssetDetails{}
-		err := json.Unmarshal([]byte(details), &assetDetails)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal asset details", logan.F{
-				"asset_code":    asset.ID,
-				"asset_details": details,
-			})
-		}
+		_ = json.Unmarshal([]byte(details), &assetDetails)
+
 		if !assetDetails.Stellar.Deposit {
 			continue
 		}
 
-		if err = assetDetails.Validate(); err != nil {
+		if err := assetDetails.Validate(); err != nil {
 			s.log.WithError(err).Warn("incorrect asset details")
 			continue
 		}

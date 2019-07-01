@@ -45,7 +45,7 @@ func (s *Service) Run(ctx context.Context) {
 }
 
 func (s *Service) processPayment(ctx context.Context, payment payment.Details) error {
-	address := s.addressProvider.ExternalAccountAt(ctx, payment.LedgerCloseTime, s.asset.ExternalSystemType, payment.TxMemo)
+	address := s.addressProvider.ExternalAccountAt(ctx, payment.LedgerCloseTime, s.asset.ExternalSystemType, payment.To, &payment.TxMemo)
 	if address == nil {
 		s.log.WithFields(logan.F{
 			"payment_id": payment.ID,
