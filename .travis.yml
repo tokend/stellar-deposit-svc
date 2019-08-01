@@ -27,7 +27,7 @@ deploy:
     tags: true
 - provider: script
   script:
-  - echo "$GITLABREG_PASSWORD" | docker login -u "GITLABREG_USERNAME" --password-stdin
+  - echo "$GITLABREG_PASSWORD" | docker login -u "GITLABREG_USERNAME" --password-stdin registry.gitlab.com
   - docker push registry.gitlab.com/$PROJECT/docker-registry/$IMAGE_NAME:$IMAGE_TAG
   on:
     tags: false
