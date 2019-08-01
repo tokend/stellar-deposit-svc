@@ -20,7 +20,7 @@ script:
 - docker build -t $PROJECT/$IMAGE_NAME:$IMAGE_TAG .
 before_deploy:
   - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-  - echo "$GITLABREG_PASSWORD" | docker login -u "GITLABREG_USERNAME" --password-stdin registry.gitlab.com
+  - echo "$GITLABREG_PASSWORD" | docker login -u "$GITLABREG_USERNAME" --password-stdin registry.gitlab.com
 deploy:
 - provider: script
   script:
