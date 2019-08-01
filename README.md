@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/tokend/stellar-deposit-svc.svg?branch=master)](https://travis-ci.org/tokend/stellar-deposit-svc)
+
 # Stellar deposit integration module
 Stellar deposit service is a bridge between TokenD and Stellar, which allows 
 to deposit tokens into TokenD from Stellar. It listens for token transfers
