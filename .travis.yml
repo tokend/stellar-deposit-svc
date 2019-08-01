@@ -27,7 +27,7 @@ deploy:
   script:
   - docker push $PROJECT/$IMAGE_NAME:$IMAGE_TAG
   on:
-    branch: true
+    all_branches: true
     tags: true
 - provider: script
   script:
