@@ -30,6 +30,7 @@ deploy:
     tags: true
 - provider: script
   script:
+  - docker tag $PROJECT/$IMAGE_NAME:$IMAGE_TAG registry.gitlab.com/$PROJECT/docker-registry/$IMAGE_NAME:$IMAGE_TAG
   - docker push registry.gitlab.com/$PROJECT/docker-registry/$IMAGE_NAME:$IMAGE_TAG
   on:
     all_branches: true
