@@ -6,10 +6,8 @@ import (
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/getters"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
-	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
-	"gitlab.com/distributed_lab/running"
-	regources "gitlab.com/tokend/regources/generated"
+	"gitlab.com/tokend/regources/generated"
 	"time"
 )
 
@@ -53,21 +51,23 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 		defer close(txChan)
 		defer close(errChan)
 		txChan <- *txPage
-		running.WithBackOff(ctx, logan.New(), "tx-streamer", func(ctx context.Context) error {
+		ticker := time.NewTicker(5 * time.Second)
+		for {
 			if len(txPage.Data) == 0 {
+				// TODO: Find better way
+				<-ticker.C
 				txPage, err = s.Self()
 			} else {
 				txPage, err = s.Next()
 			}
 			if err != nil {
 				errChan <- err
-				return errors.Wrap(err, "error occurred while streaming transactions")
+				continue
 			}
 			if txPage != nil {
 				txChan <- *txPage
 			}
-			return nil
-		}, 15*time.Second, 15*time.Second, 5*time.Minute)
+		}
 	}()
 
 	return txChan, errChan

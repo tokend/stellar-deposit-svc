@@ -2,6 +2,7 @@ package addrstate
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"gitlab.com/tokend/go/xdr"
@@ -22,10 +23,15 @@ func (w *Watcher) ExternalAccountAt(ctx context.Context, ts time.Time, systemTyp
 	if payload != nil {
 		externalDataType = "address_with_payload"
 	}
-	states := w.state.external[systemType][ExternalData{
+	key, err := json.Marshal(ExternalData{
 		Type: externalDataType,
 		Data: ExternalDataEntry{Address: address, Payload: payload},
-	}]
+	})
+	if err != nil {
+		w.log.WithError(err).Error("unable to marshal external id data")
+		return nil
+	}
+	states := w.state.external[systemType][string(key)]
 	if len(states) == 0 {
 		return nil
 	}
@@ -51,7 +57,7 @@ func (w *Watcher) ExternalAccountAt(ctx context.Context, ts time.Time, systemTyp
 }
 
 // BindExternalSystemEntities returns all known external data for systemType
-func (w *Watcher) BindedExternalSystemEntities(ctx context.Context, systemType int32) (result []ExternalData) {
+func (w *Watcher) BindedExternalSystemEntities(ctx context.Context, systemType int32) (result []string) {
 	w.ensureReached(ctx, time.Now())
 
 	w.state.RLock()

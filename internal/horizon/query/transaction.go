@@ -46,7 +46,7 @@ func (p TransactionParams) Prepare() url.Values {
 
 func (p TransactionFilters) prepare(result *url.Values) {
 	if p.EntryTypes != nil {
-		types := make([]string, len(p.EntryTypes))
+		types := make([]string, 0, len(p.EntryTypes))
 		for _, et := range p.EntryTypes {
 			types = append(types, fmt.Sprintf("%d", et))
 		}
@@ -54,7 +54,7 @@ func (p TransactionFilters) prepare(result *url.Values) {
 	}
 
 	if p.ChangeTypes != nil {
-		types := make([]string, len(p.ChangeTypes))
+		types := make([]string, 0, len(p.ChangeTypes))
 		for _, ct := range p.ChangeTypes {
 			types = append(types, fmt.Sprintf("%d", ct))
 		}
