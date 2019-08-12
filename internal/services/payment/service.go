@@ -36,7 +36,6 @@ func (s *Service) Run(ctx context.Context) {
 		if err != nil {
 			return errors.Wrap(err, "failed to get next page of payments")
 		}
-
 		return nil
 	}, 30*time.Second, 30*time.Second, time.Hour)
 }
@@ -72,7 +71,9 @@ func (s *Service) processPaymentPage(page operations.OperationsPage) error {
 				"payment_id": record.GetID(),
 			})
 		}
+		s.log.WithField("payment_id", payment.ID).Info("Found suitable payment")
 		s.ch <- paymentDetails(payment, tx)
+		s.log.WithField("payment_id", payment.ID).Info("Sent payment to issuer")
 	}
 
 	return nil

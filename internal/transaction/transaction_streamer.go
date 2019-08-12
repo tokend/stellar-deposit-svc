@@ -6,7 +6,9 @@ import (
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/getters"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/page"
 	"github.com/tokend/stellar-deposit-svc/internal/horizon/query"
+	"gitlab.com/distributed_lab/logan/v3"
 	"gitlab.com/distributed_lab/logan/v3/errors"
+	"gitlab.com/distributed_lab/running"
 	"gitlab.com/tokend/regources/generated"
 	"time"
 )
@@ -16,11 +18,15 @@ const (
 )
 
 type Streamer struct {
+	log *logan.Entry
 	getters.TransactionHandler
 }
 
-func NewStreamer(handler getters.TransactionHandler) *Streamer {
-	return &Streamer{handler}
+func NewStreamer(handler getters.TransactionHandler, log *logan.Entry) *Streamer {
+	return &Streamer{
+		log:                log,
+		TransactionHandler: handler,
+	}
 }
 func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTypes []int,
 ) (<-chan regources.TransactionListResponse, <-chan error) {
@@ -48,11 +54,14 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 		return txChan, errChan
 	}
 	go func() {
-		defer close(txChan)
-		defer close(errChan)
+		defer func() {
+			s.log.Info("Closing channels...")
+			close(txChan)
+			close(errChan)
+		}()
 		txChan <- *txPage
 		ticker := time.NewTicker(5 * time.Second)
-		for {
+		running.WithBackOff(ctx, s.log, "transaction-streamer", func(ctx context.Context) error {
 			if len(txPage.Data) == 0 {
 				// TODO: Find better way
 				<-ticker.C
@@ -62,12 +71,13 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 			}
 			if err != nil {
 				errChan <- err
-				continue
+				return err
 			}
 			if txPage != nil {
 				txChan <- *txPage
 			}
-		}
+			return nil
+		}, time.Second, 2*time.Second, 10*time.Second)
 	}()
 
 	return txChan, errChan

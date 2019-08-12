@@ -83,7 +83,7 @@ func (s *Service) spawn(ctx context.Context, details watchlist.Details) {
 
 	paymentStreamer := payment.NewService(payment.Opts{
 		Client:       s.config.Stellar(),
-		Log:          s.log,
+		Log:          s.log.WithField("asset", details.ID),
 		WatchAddress: s.config.PaymentConfig().TargetAddress,
 		AssetDetails: details,
 	})
@@ -92,9 +92,10 @@ func (s *Service) spawn(ctx context.Context, details watchlist.Details) {
 
 	issueSubmitter := issuer.New(issuer.Opts{
 		AssetDetails: details,
-		Log:          s.log,
+		Log:          s.log.WithField("asset", details.ID),
 		Streamer: transaction.NewStreamer(
 			getters.NewDefaultTransactionHandler(s.config.Horizon()),
+			s.log.WithField("service", "transaction-streamer"),
 		),
 		Builder:     s.builder,
 		Signer:      s.config.DepositConfig().AssetIssuer,
