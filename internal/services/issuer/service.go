@@ -28,22 +28,28 @@ func (s *Service) Run(ctx context.Context) {
 	)
 	s.log.Info("Started issuer service")
 	running.WithBackOff(ctx, s.log, "issuer", func(ctx context.Context) error {
-		payment, ok := <-s.ch
-		if !ok {
-			s.log.Error("Channel closed unexpectedly")
-		}
+		select {
+		case pmnt, ok := <-s.ch:
+			{
+				if !ok {
+					return errors.New("Channel closed unexpectedly")
+				}
 
-		s.log.WithField("asset", s.asset.ID).Info("Got payment")
-		err := s.processPayment(ctx, payment)
-		if err != nil {
-			return errors.Wrap(err, "failed to process payment", logan.F{
-				"tx_hash":    payment.TxHash,
-				"tx_memo":    payment.TxMemo,
-				"payment_id": payment.ID,
-			})
+				s.log.WithField("asset", s.asset.ID).Info("Got pmnt")
+				err := s.processPayment(ctx, pmnt)
+				if err != nil {
+					return errors.Wrap(err, "failed to process pmnt", logan.F{
+						"tx_hash":    pmnt.TxHash,
+						"tx_memo":    pmnt.TxMemo,
+						"payment_id": pmnt.ID,
+					})
+				}
+			}
+		default:
 		}
 		return nil
 	}, time.Second, 20*time.Second, time.Minute)
+	s.log.Info("Issuer service stopped")
 }
 
 func (s *Service) processPayment(ctx context.Context, payment payment.Details) error {
@@ -53,9 +59,10 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 			"payment_id": payment.ID,
 			"tx_hash":    payment.TxHash,
 			"tx_memo":    payment.TxMemo,
-		}).Debug("Unable to find valid address to issue tokens to")
+		}).Warn("Unable to find valid address to issue tokens to")
 		return nil
 	}
+	s.log.Info("Got account")
 	balance := s.addressProvider.Balance(ctx, *address, s.asset.ID)
 	if balance == nil {
 		s.log.WithFields(logan.F{
@@ -63,9 +70,10 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 			"tx_hash":    payment.TxHash,
 			"tx_memo":    payment.TxMemo,
 			"address":    address,
-		}).Debug("Unable to find valid balance to issue tokens to")
+		}).Warn("Unable to find valid balance to issue tokens to")
 		return nil
 	}
+	s.log.Info("Got balance")
 
 	issueDetails := details{
 		TxMemo:    payment.TxMemo,
