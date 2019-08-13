@@ -66,6 +66,10 @@ func (s *Service) processPaymentPage(page operations.OperationsPage) error {
 			continue
 		}
 
+		if payment.To != s.watchAddress {
+			continue
+		}
+
 		tx, err := s.client.TransactionDetail(record.GetTransactionHash())
 		if err != nil {
 			return errors.Wrap(err, "failed to get parent transaction of payment", logan.F{
