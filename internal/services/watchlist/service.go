@@ -29,8 +29,8 @@ func (s *Service) Run(ctx context.Context) {
 		s.log,
 		"asset-watcher",
 		s.processAllAssetsOnce,
-		10*time.Second,
-		20*time.Second,
+		30*time.Second,
+		40*time.Second,
 		5*time.Minute,
 	)
 }

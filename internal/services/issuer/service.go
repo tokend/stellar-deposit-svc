@@ -28,21 +28,22 @@ func (s *Service) Run(ctx context.Context) {
 	)
 	s.log.Info("Started issuer service")
 	running.WithBackOff(ctx, s.log, "issuer", func(ctx context.Context) error {
-
-		for pmnt := range s.ch {
-			s.log.WithField("asset", s.asset.ID).Info("Got payment")
-			err := s.processPayment(ctx, pmnt)
-			if err != nil {
-				return errors.Wrap(err, "failed to process payment", logan.F{
-					"tx_hash":    pmnt.TxHash,
-					"tx_memo":    pmnt.TxMemo,
-					"payment_id": pmnt.ID,
-				})
-			}
+		payment, ok := <-s.ch
+		if !ok {
+			s.log.Error("Channel closed unexpectedly")
 		}
 
+		s.log.WithField("asset", s.asset.ID).Info("Got payment")
+		err := s.processPayment(ctx, payment)
+		if err != nil {
+			return errors.Wrap(err, "failed to process payment", logan.F{
+				"tx_hash":    payment.TxHash,
+				"tx_memo":    payment.TxMemo,
+				"payment_id": payment.ID,
+			})
+		}
 		return nil
-	}, 10*time.Second, 20*time.Second, time.Minute)
+	}, time.Second, 20*time.Second, time.Minute)
 }
 
 func (s *Service) processPayment(ctx context.Context, payment payment.Details) error {
@@ -52,7 +53,7 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 			"payment_id": payment.ID,
 			"tx_hash":    payment.TxHash,
 			"tx_memo":    payment.TxMemo,
-		}).Info("Unable to find valid address to issue tokens to")
+		}).Debug("Unable to find valid address to issue tokens to")
 		return nil
 	}
 	balance := s.addressProvider.Balance(ctx, *address, s.asset.ID)
@@ -62,7 +63,7 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 			"tx_hash":    payment.TxHash,
 			"tx_memo":    payment.TxMemo,
 			"address":    address,
-		}).Info("Unable to find valid balance to issue tokens to")
+		}).Debug("Unable to find valid balance to issue tokens to")
 		return nil
 	}
 

@@ -19,23 +19,25 @@ func (s *Service) Run(ctx context.Context) {
 	request := horizonclient.OperationRequest{
 		ForAccount: s.watchAddress,
 		Order:      horizonclient.OrderAsc,
+		Limit:      50,
 	}
-	page, err := s.client.Operations(request)
-	if err != nil {
-		s.log.WithError(err).Error("failed to get payments page")
-		return
-	}
-
 	running.WithBackOff(ctx, s.log, "stellar-payment-listener", func(ctx context.Context) error {
+		page, err := s.client.Operations(request)
+		if err != nil {
+			s.log.WithError(err).Error("failed to get payments page")
+			return err
+		}
+
 		err = s.processPaymentPage(page)
 		if err != nil {
 			return errors.Wrap(err, "failed to process payment page")
 		}
 
-		page, err = s.client.NextOperationsPage(page)
-		if err != nil {
-			return errors.Wrap(err, "failed to get next page of payments")
+		recordsLen := len(page.Embedded.Records)
+		if recordsLen > 0 {
+			request.Cursor = page.Embedded.Records[recordsLen-1].GetID()
 		}
+
 		return nil
 	}, 30*time.Second, 30*time.Second, time.Hour)
 }
@@ -71,7 +73,6 @@ func (s *Service) processPaymentPage(page operations.OperationsPage) error {
 				"payment_id": record.GetID(),
 			})
 		}
-		s.log.WithField("payment_id", payment.ID).Info("Found suitable payment")
 		s.ch <- paymentDetails(payment, tx)
 		s.log.WithField("payment_id", payment.ID).Info("Sent payment to issuer")
 	}
