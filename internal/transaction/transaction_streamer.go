@@ -62,7 +62,7 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 		txChan <- *txPage
 		ticker := time.NewTicker(5 * time.Second)
 		running.WithBackOff(ctx, s.log, "transaction-streamer", func(ctx context.Context) error {
-			if len(txPage.Data) == 0 {
+			if txPage == nil || len(txPage.Data) == 0 {
 				// TODO: Find better way
 				<-ticker.C
 				txPage, err = s.Self()
@@ -75,6 +75,8 @@ func (s *Streamer) StreamTransactions(ctx context.Context, changeTypes, entryTyp
 			}
 			if txPage != nil {
 				txChan <- *txPage
+			} else {
+				s.log.Warn("got nil page")
 			}
 			return nil
 		}, time.Second, 2*time.Second, 10*time.Second)
