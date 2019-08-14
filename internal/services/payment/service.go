@@ -70,15 +70,19 @@ func (s *Service) processPaymentPage(page operations.OperationsPage) error {
 			continue
 		}
 
+		fields := logan.F{
+			"tx_hash":    record.GetTransactionHash(),
+			"payment_id": record.GetID(),
+			"amount":     payment.Amount,
+			"from":       payment.From,
+		}
+
 		tx, err := s.client.TransactionDetail(record.GetTransactionHash())
 		if err != nil {
-			return errors.Wrap(err, "failed to get parent transaction of payment", logan.F{
-				"tx_hash":    record.GetTransactionHash(),
-				"payment_id": record.GetID(),
-			})
+			return errors.Wrap(err, "failed to get parent transaction of payment", fields)
 		}
 		s.ch <- paymentDetails(payment, tx)
-		s.log.WithField("payment_id", payment.ID).Info("Sent payment to issuer")
+		s.log.WithFields(fields).Info("Sent payment to issuer")
 	}
 
 	return nil

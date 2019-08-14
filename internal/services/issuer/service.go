@@ -35,17 +35,17 @@ func (s *Service) Run(ctx context.Context) {
 					return errors.New("Channel closed unexpectedly")
 				}
 
-				s.log.WithField("asset", s.asset.ID).Info("Got pmnt")
+				s.log.WithField("asset", s.asset.ID).Info("Got payment")
 				err := s.processPayment(ctx, pmnt)
 				if err != nil {
-					return errors.Wrap(err, "failed to process pmnt", logan.F{
+					return errors.Wrap(err, "failed to process payment", logan.F{
 						"tx_hash":    pmnt.TxHash,
 						"tx_memo":    pmnt.TxMemo,
 						"payment_id": pmnt.ID,
 					})
 				}
 			}
-		default:
+		case <-ctx.Done():
 		}
 		return nil
 	}, time.Second, 20*time.Second, time.Minute)
@@ -53,27 +53,24 @@ func (s *Service) Run(ctx context.Context) {
 }
 
 func (s *Service) processPayment(ctx context.Context, payment payment.Details) error {
+	fields := logan.F{
+		"payment_id": payment.ID,
+		"tx_hash":    payment.TxHash,
+		"tx_memo":    payment.TxMemo,
+	}
 	address := s.addressProvider.ExternalAccountAt(ctx, payment.LedgerCloseTime, s.asset.ExternalSystemType, payment.To, &payment.TxMemo)
 	if address == nil {
-		s.log.WithFields(logan.F{
-			"payment_id": payment.ID,
-			"tx_hash":    payment.TxHash,
-			"tx_memo":    payment.TxMemo,
-		}).Warn("Unable to find valid address to issue tokens to")
+		s.log.WithFields(fields).Warn("Unable to find valid address to issue tokens to")
 		return nil
 	}
-	s.log.Info("Got account")
+
+	fields["address"] = address
 	balance := s.addressProvider.Balance(ctx, *address, s.asset.ID)
 	if balance == nil {
-		s.log.WithFields(logan.F{
-			"payment_id": payment.ID,
-			"tx_hash":    payment.TxHash,
-			"tx_memo":    payment.TxMemo,
-			"address":    address,
-		}).Warn("Unable to find valid balance to issue tokens to")
+		s.log.WithFields(fields).Warn("Unable to find valid balance to issue tokens to")
 		return nil
 	}
-	s.log.Info("Got balance")
+	fields["balance"] = balance
 
 	issueDetails := details{
 		TxMemo:    payment.TxMemo,
@@ -83,7 +80,7 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 	}
 	detailsbb, err := json.Marshal(issueDetails)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal payment details")
+		return errors.Wrap(err, "failed to marshal payment details", fields)
 	}
 
 	refHash := hash.Hash([]byte(payment.ID))
@@ -106,6 +103,8 @@ func (s *Service) processPayment(ctx context.Context, payment payment.Details) e
 	if err != nil {
 		return errors.Wrap(err, "failed to submit issuance tx")
 	}
+
+	s.log.WithFields(fields).Info("Successfully processed deposit")
 	return nil
 }
 
@@ -120,6 +119,5 @@ func (s *Service) submitEnvelope(ctx context.Context, envelope string, paymentID
 	if err != nil {
 		return errors.Wrap(err, "Horizon SubmitResult has error")
 	}
-	s.log.WithField("payment_id", paymentID).Info("Successfully processed deposit")
 	return nil
 }
