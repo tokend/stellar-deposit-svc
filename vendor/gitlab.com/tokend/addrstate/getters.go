@@ -57,7 +57,7 @@ func (w *Watcher) ExternalAccountAt(ctx context.Context, ts time.Time, systemTyp
 }
 
 // BindExternalSystemEntities returns all known external data for systemType
-func (w *Watcher) BindedExternalSystemEntities(ctx context.Context, systemType int32) (result []string) {
+func (w *Watcher) BindedExternalSystemEntities(ctx context.Context, systemType int32) (result []ExternalData) {
 	w.ensureReached(ctx, time.Now())
 
 	w.state.RLock()
@@ -68,8 +68,13 @@ func (w *Watcher) BindedExternalSystemEntities(ctx context.Context, systemType i
 	}
 
 	entities := w.state.external[systemType]
-	for entity, _ := range entities {
-		result = append(result, entity)
+	for entity := range entities {
+		var data ExternalData
+		err := json.Unmarshal([]byte(entity), &data)
+		if err != nil {
+			w.log.WithError(err).Error("unable to parse external system entity")
+		}
+		result = append(result, data)
 	}
 	return result
 }
@@ -90,6 +95,7 @@ func (w *Watcher) KYCData(ctx context.Context, address string) *string {
 
 func (w *Watcher) Balance(ctx context.Context, address string, asset string) *string {
 	w.state.RLock()
+	defer w.state.RUnlock()
 
 	// let's hope for the best and try to get balance before reaching head
 	if w.state.balances[address] != nil {
@@ -104,7 +110,6 @@ func (w *Watcher) Balance(ctx context.Context, address string, asset string) *st
 	w.ensureReached(ctx, time.Now())
 
 	w.state.RLock()
-	defer w.state.RUnlock()
 
 	// now check again
 	if w.state.balances[address] != nil {
