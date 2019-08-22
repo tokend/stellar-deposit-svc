@@ -330,11 +330,11 @@
 
 [[projects]]
   branch = "feature/v3"
-  digest = "1:99b4a6550a4ed8c536726838ca37adbcb3ad5fd85c7c5b7294c4383aa85fe383"
+  digest = "1:6499dc06789dc39185185a113ff4b179148525ea9dcdf8468315ee09d055d416"
   name = "gitlab.com/tokend/addrstate"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3046ee5b2d5d776582153d673aa198cd9fda19ce"
+  revision = "80582815f6cea88534371d4a5e6271ab645199ec"
 
 [[projects]]
   digest = "1:ef57710b77b20159f7c72d759355bb0f97d4552c9c2320c404308d31d1d67f2a"
