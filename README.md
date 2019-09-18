@@ -39,14 +39,15 @@ payment:
   target_address: "G_STELLAR_DEPOSIT_ADDRESS" # address to payments to
 
 deposit:
-  asset_owner: "G_SOME_VALID_ADDRESS"
-  asset_issuer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+  admin_signer: "S_SOME_VALID_SECRET_KEY" # used to sign transactions
 
 horizon:
   endpoint:
-  signer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+  signer: "S_SOME_VALID_SECRET_KEY" # used to get requests from horizon
 
 log:
   level: info
   disable_sentry: true
 ```
+
+Just add public key of `deposit: admin_signer` as signer to corporate account for issuance

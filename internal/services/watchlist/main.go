@@ -8,7 +8,6 @@ import (
 type Service struct {
 	streamer  getters.AssetHandler
 	log       *logan.Entry
-	owner     string
 	watchlist map[string]bool
 	toAdd     chan Details
 	toRemove  chan string
@@ -17,7 +16,6 @@ type Service struct {
 type Opts struct {
 	Streamer   getters.AssetHandler
 	Log        *logan.Entry
-	AssetOwner string
 }
 
 func New(opts Opts) *Service {
@@ -25,7 +23,6 @@ func New(opts Opts) *Service {
 	toRemove := make(chan string)
 	return &Service{
 		streamer:  opts.Streamer,
-		owner:     opts.AssetOwner,
 		log:       opts.Log.WithField("service", "watchlist"),
 		watchlist: make(map[string]bool),
 		toRemove:  toRemove,

@@ -28,7 +28,6 @@ type Service struct {
 
 func New(cfg config.Config) *Service {
 	assetWatcher := watchlist.New(watchlist.Opts{
-		AssetOwner: cfg.DepositConfig().AssetOwner.Address(),
 		Streamer:   getters.NewDefaultAssetHandler(cfg.Horizon()),
 		Log:        cfg.Log(),
 	})
@@ -98,7 +97,7 @@ func (s *Service) spawn(ctx context.Context, details watchlist.Details) {
 			s.log.WithField("service", "transaction-streamer"),
 		),
 		Builder:     s.builder,
-		Signer:      s.config.DepositConfig().AssetIssuer,
+		Signer:      s.config.DepositConfig().AdminSigner,
 		TxSubmitter: submit.New(s.config.Horizon()),
 		Ch:          payments,
 	})
