@@ -5,12 +5,11 @@ payment:
   target_address: "G_STELLAR_DEPOSIT_ADDRESS"
 
 deposit:
-  asset_owner: "G_SOME_VALID_ADDRESS"
-  asset_issuer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+  admin_signer: "S_SOME_VALID_SIGNER_SECRET_KEY" # signer of transactions
 
 horizon:
   endpoint:
-  signer: "S_SOME_VALID_SECRET_KEY" # Issuer of assets
+  signer: "S_SOME_VALID_SECRET_KEY" # signer for requests
 
 log:
   level: info
